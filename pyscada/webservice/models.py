@@ -7,7 +7,6 @@ from pyscada.models import Variable
 from urllib.request import urlopen
 import json
 import xml.etree.ElementTree as ET
-from time import time
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -30,7 +29,8 @@ class WebServiceVariable(models.Model):
     webservice_variable = models.OneToOneField(Variable, null=True, blank=True, on_delete=models.CASCADE)
     path = models.CharField(max_length=254, null=True, blank=True,
                             help_text="For XML look at "
-                                      "https://docs.python.org/3/library/xml.etree.elementtree.html#xpath-support")
+                                      "https://docs.python.org/3/library/xml.etree.elementtree.html#xpath-support -"
+                                      " for JSON write nested dict as a space separated string : dict1 dict2 ...")
 
     def __str__(self):
         return self.id.__str__() + "-" + self.webservice_variable.short_name

@@ -22,10 +22,7 @@ class WebServiceDeviceAdminInline(admin.StackedInline):
 class WebServiceDeviceAdmin(DeviceAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
-            logger.debug(db_field.name)
-            logger.debug(DeviceProtocol.objects.all())
             kwargs['queryset'] = DeviceProtocol.objects.filter(pk=PROTOCOL_ID)
-            logger.debug(kwargs)
             db_field.default = PROTOCOL_ID
         return super(WebServiceDeviceAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 

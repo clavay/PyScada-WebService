@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from .models import WebServiceAction
 from time import time
+import json
 
 import logging
 
@@ -52,8 +52,10 @@ class Device:
                         self.webservices[item]['variables'][var]['value'] = \
                             res[path]["result"].find(self.webservices[item]['variables'][var]['variable_path']).text
                     elif res[path]["content_type"] == "application/json":
-                        # TODO
-                        pass
+                        tmp = res[path]["result"]
+                        for key in self.webservices[item]['variables'][var]['variable_path'].split():
+                            tmp = tmp.get(key, {})
+                        self.webservices[item]['variables'][var]['value'] = tmp
                     if self.webservices[item]['variables'][var]['value'] is not None \
                             and self.webservices[item]['variables'][var]['object'].\
                             update_value(self.webservices[item]['variables'][var]['value'], timestamp):

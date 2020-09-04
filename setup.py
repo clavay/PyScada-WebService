@@ -32,6 +32,7 @@ setup(
     classifiers=CLASSIFIERS,
     install_requires=[
         'pyscada',
+        'json',
     ],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,
