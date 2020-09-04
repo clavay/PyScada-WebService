@@ -5,6 +5,7 @@ from pyscada.models import Device
 from pyscada.models import Variable
 
 from urllib.request import urlopen
+from urllib.error import HTTPError
 import json
 import xml.etree.ElementTree as ET
 
@@ -59,7 +60,10 @@ class WebServiceAction(models.Model):
                 paths[variables[var_id]['device_path'] + self.path] = {}
                 paths[variables[var_id]['device_path'] + self.path][var_id] = variables[var_id]['variable_path']
         for ws_path in paths:
-            res = urlopen(ws_path)
+            try:
+                res = urlopen(ws_path)
+            except HTTPError:
+                return out
             if res.getcode() == 200:
                 out[ws_path] = {}
                 out[ws_path]["content_type"] = res.info().get_content_type()
