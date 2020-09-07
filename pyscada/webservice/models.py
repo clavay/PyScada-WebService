@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+from django.db.models.signals import post_save
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,9 +31,7 @@ class WebServiceDevice(models.Model):
 class WebServiceVariable(models.Model):
     webservice_variable = models.OneToOneField(Variable, null=True, blank=True, on_delete=models.CASCADE)
     path = models.CharField(max_length=254, null=True, blank=True,
-                            help_text="For XML look at "
-                                      "https://docs.python.org/3/library/xml.etree.elementtree.html#xpath-support -"
-                                      " for JSON write nested dict as a space separated string : dict1 dict2 ...")
+                            help_text="look at the readme")
 
     def __str__(self):
         return self.id.__str__() + "-" + self.webservice_variable.short_name
@@ -42,8 +42,11 @@ class WebServiceAction(models.Model):
     name = models.CharField(max_length=254)
     webservice_mode_choices = ((0, 'Path'), (1, 'GET'), (2, 'POST'),)
     webservice_mode = models.PositiveSmallIntegerField(default=0, choices=webservice_mode_choices)
-    path = models.CharField(max_length=400, null=True, blank=True)
-    variables = models.ManyToManyField(Variable)
+    webservice_RW_choices = ((0, 'Read'), (1, 'Write'),)
+    webservice_RW = models.PositiveSmallIntegerField(default=0, choices=webservice_RW_choices)
+    write_trigger = models.ForeignKey(Variable, null=True, on_delete=models.CASCADE, related_name="ws_write_trigger")
+    path = models.CharField(max_length=400, null=True, blank=True, help_text="look at the readme")
+    variables = models.ManyToManyField(Variable, related_name="ws_variables")
     active = models.BooleanField(default=True)
 
     def __str__(self):
@@ -52,7 +55,6 @@ class WebServiceAction(models.Model):
     def request_data(self, variables):
         paths = {}
         out = {}
-        #for var in self.variables.all():
         for var_id in variables:
             try:
                 paths[variables[var_id]['device_path'] + self.path][var_id] = variables[var_id]['variable_path']
@@ -64,10 +66,11 @@ class WebServiceAction(models.Model):
             try:
                 res = urlopen(ws_path)
             except:
+                res = None
                 out[ws_path]["content_type"] = None
                 out[ws_path]["ws_path"] = ws_path
                 pass
-            if res.getcode() == 200:
+            if res is not None and res.getcode() == 200:
                 out[ws_path]["content_type"] = res.info().get_content_type()
                 out[ws_path]["ws_path"] = ws_path
                 if out[ws_path]["content_type"] == "text/xml":
@@ -75,6 +78,41 @@ class WebServiceAction(models.Model):
                 elif out[ws_path]["content_type"] == "application/json":
                     out[ws_path]["result"] = json.loads(res.read())
         return out
+
+    def write_data(self):
+        device = None
+        if self.webservice_RW != 1:
+            return False
+        path = self.path
+        for var_id in self.variables.all():
+            v = Variable.object.get(pk=var_id)
+            if device is None:
+                device = v.device
+            elif device != v.device:
+                logger.warning("WebService Write action with id " + self.id + " have variables with different devices")
+            if v.query_prev_value():
+                path.replace("$" + var_id, v.prev_value)
+            else:
+                logger.debug("WS Write - Var id " + var_id + " has no prev value")
+                return False
+        ws_path = device.webservicedevice.ip_or_dns + self.path
+        try:
+            res = urlopen(ws_path)
+        except:
+            res = None
+        if res is not None and res.getcode() == 200:
+            return True
+        else:
+            if res is None:
+                logger.debug("WS Write - res is None")
+            else:
+                logger.debug("WS Write - res code is " + res.getcode())
+            return False
+
+    def save(self, *args, **kwargs):
+        # TODO : select only devices of selected variables
+        post_save.send_robust(sender=WebServiceAction, instance=WebServiceDevice.objects.first())
+        super(WebServiceAction, self).save(*args, **kwargs)
 
 
 class ExtendedWebServiceDevice(Device):

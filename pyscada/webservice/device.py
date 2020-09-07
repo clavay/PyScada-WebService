@@ -27,7 +27,7 @@ class Device:
             self.variables[var.pk] = {}
             self.variables[var.pk]['object'] = var
             self.variables[var.pk]['value'] = None
-            for ws in var.webserviceaction_set.filter(active=1):
+            for ws in var.ws_variables.filter(active=1, webservice_RW=0):
                 self.webservices[ws.pk] = {}
                 self.webservices[ws.pk]['object'] = ws
                 self.webservices[ws.pk]['variables'] = {}
@@ -46,7 +46,7 @@ class Device:
             for var in self.webservices[item]['variables']:
                 path = self.webservices[item]['variables'][var]['device_path'] + self.webservices[item]['object'].path
                 if self.webservices[item]['variables'][var]['value'] is not None:
-                    logger.warning("Variable " + var + " is in more than one WebService")
+                    logger.warning("Variable " + str(var) + " is in more than one WebService")
                 else:
                     if res[path]["content_type"] == "text/xml":
                         self.webservices[item]['variables'][var]['value'] = \
@@ -61,10 +61,6 @@ class Device:
                             update_value(self.webservices[item]['variables'][var]['value'], timestamp):
                         output.append(self.webservices[item]['variables'][var]['object'].create_recorded_data_element())
 
-        # for item in self.variables:
-        # if value is not None and item.update_value(value, timestamp):
-            #    output.append(item.create_recorded_data_element())
-
         return output
 
     def write_data(self, variable_id, value, task):
@@ -74,11 +70,13 @@ class Device:
 
         output = []
 
-        for item in self.variables:
-            if item.id == variable_id:
-                if not item.writeable:
-                    return False
-                value = None
-                if value is not None and item.update_value(value, time()):
-                    output.append(item.create_recorded_data_element())
+        if variable_id not in self.variables:
+            return False
+
+        if not self.variables[variable_id]['object'].writeable:
+            return False
+
+        if value is not None and self.variables[variable_id]['object'].update_value(value, time()):
+            output.append(self.variables[variable_id]['object'].create_recorded_data_element())
+
         return output
