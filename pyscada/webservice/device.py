@@ -35,6 +35,7 @@ class Device:
                 self.webservices[ws.pk]['variables'][var.pk]['object'] = var
                 self.webservices[ws.pk]['variables'][var.pk]['value'] = None
                 self.webservices[ws.pk]['variables'][var.pk]['device_path'] = var.device.webservicedevice.ip_or_dns
+                self.webservices[ws.pk]['variables'][var.pk]['proxy'] = var.device.webservicedevice.http_proxy
                 self.webservices[ws.pk]['variables'][var.pk]['variable_path'] = var.webservicevariable.path
 
     def request_data(self):
@@ -50,10 +51,10 @@ class Device:
                 if self.webservices[item]['variables'][var]['value'] is not None and\
                         self.webservices[item]['object'].webservice_RW:
                     logger.warning("Variable " + str(var) + " is in more than one WebService")
-                if res[path]["content_type"] == "text/xml":
+                if "text/xml" in res[path]["content_type"]:
                     self.webservices[item]['variables'][var]['value'] = \
                         res[path]["result"].find(self.webservices[item]['variables'][var]['variable_path']).text
-                elif res[path]["content_type"] == "application/json":
+                elif "application/json" in res[path]["content_type"]:
                     tmp = res[path]["result"]
                     for key in self.webservices[item]['variables'][var]['variable_path'].split():
                         tmp = tmp.get(key, {})

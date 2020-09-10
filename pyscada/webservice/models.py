@@ -4,9 +4,8 @@ from __future__ import unicode_literals
 from pyscada.models import Device
 from pyscada.models import Variable
 
-from urllib.request import urlopen
+import requests
 
-import json
 import xml.etree.ElementTree as ET
 
 from django.db import models
@@ -22,6 +21,7 @@ logger = logging.getLogger(__name__)
 class WebServiceDevice(models.Model):
     webservice_device = models.OneToOneField(Device, null=True, blank=True, on_delete=models.CASCADE)
     ip_or_dns = models.CharField(max_length=254)
+    http_proxy = models.CharField(max_length=254, null=True, blank=True)
 
     def __str__(self):
         return self.webservice_device.short_name
@@ -59,25 +59,36 @@ class WebServiceAction(models.Model):
         for var_id in variables:
             try:
                 paths[variables[var_id]['device_path'] + self.path][var_id] = variables[var_id]['variable_path']
+                paths[variables[var_id]['device_path'] + self.path]['proxy'] = variables[var_id]['proxy']
+
             except KeyError:
                 paths[variables[var_id]['device_path'] + self.path] = {}
                 paths[variables[var_id]['device_path'] + self.path][var_id] = variables[var_id]['variable_path']
+                paths[variables[var_id]['device_path'] + self.path]['proxy'] = variables[var_id]['proxy']
         for ws_path in paths:
             out[ws_path] = {}
             try:
-                res = urlopen(ws_path)
-            except:
+                if paths[ws_path]['proxy'] is not None:
+                    proxy_dict = {
+                        "http": paths[ws_path]['proxy'],
+                        "https": paths[ws_path]['proxy'],
+                        "ftp": paths[ws_path]['proxy']
+                    }
+                    res = requests.get(ws_path, proxies=proxy_dict)
+                else:
+                    res = requests.get(ws_path)
+            except Exception as e:
                 res = None
                 out[ws_path]["content_type"] = None
                 out[ws_path]["ws_path"] = ws_path
                 pass
-            if res is not None and res.getcode() == 200:
-                out[ws_path]["content_type"] = res.info().get_content_type()
+            if res is not None and res.status_code == 200:
+                out[ws_path]["content_type"] = res.headers['Content-type']
                 out[ws_path]["ws_path"] = ws_path
-                if out[ws_path]["content_type"] == "text/xml":
-                    out[ws_path]["result"] = ET.fromstring(res.read().decode())
-                elif out[ws_path]["content_type"] == "application/json":
-                    out[ws_path]["result"] = json.loads(res.read())
+                if "text/xml" in out[ws_path]["content_type"]:
+                    out[ws_path]["result"] = ET.fromstring(res.text)
+                elif "application/json" in out[ws_path]["content_type"]:
+                    out[ws_path]["result"] = res.json()
         return out
 
     def write_data(self):
@@ -97,16 +108,16 @@ class WebServiceAction(models.Model):
                 return False
         ws_path = device.webservicedevice.ip_or_dns + path
         try:
-            res = urlopen(ws_path)
+            res = requests.get(ws_path)
         except:
             res = None
-        if res is not None and res.getcode() == 200:
+        if res is not None and res.status_code == 200:
             return True
         else:
             if res is None:
                 logger.debug("WS Write - res is None")
             else:
-                logger.debug("WS Write - res code is " + res.getcode())
+                logger.debug("WS Write - res code is " + res.status_code)
             return False
 
     def save(self, *args, **kwargs):
