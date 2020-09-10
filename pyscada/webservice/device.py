@@ -47,21 +47,21 @@ class Device:
             res = self.webservices[item]['object'].request_data(self.webservices[item]['variables'])
             for var in self.webservices[item]['variables']:
                 path = self.webservices[item]['variables'][var]['device_path'] + self.webservices[item]['object'].path
-                if self.webservices[item]['variables'][var]['value'] is not None:
+                if self.webservices[item]['variables'][var]['value'] is not None and\
+                        self.webservices[item]['object'].webservice_RW:
                     logger.warning("Variable " + str(var) + " is in more than one WebService")
-                else:
-                    if res[path]["content_type"] == "text/xml":
-                        self.webservices[item]['variables'][var]['value'] = \
-                            res[path]["result"].find(self.webservices[item]['variables'][var]['variable_path']).text
-                    elif res[path]["content_type"] == "application/json":
-                        tmp = res[path]["result"]
-                        for key in self.webservices[item]['variables'][var]['variable_path'].split():
-                            tmp = tmp.get(key, {})
-                        self.webservices[item]['variables'][var]['value'] = tmp
-                    if self.webservices[item]['variables'][var]['value'] is not None \
-                            and self.webservices[item]['variables'][var]['object'].\
-                            update_value(self.webservices[item]['variables'][var]['value'], timestamp):
-                        output.append(self.webservices[item]['variables'][var]['object'].create_recorded_data_element())
+                if res[path]["content_type"] == "text/xml":
+                    self.webservices[item]['variables'][var]['value'] = \
+                        res[path]["result"].find(self.webservices[item]['variables'][var]['variable_path']).text
+                elif res[path]["content_type"] == "application/json":
+                    tmp = res[path]["result"]
+                    for key in self.webservices[item]['variables'][var]['variable_path'].split():
+                        tmp = tmp.get(key, {})
+                    self.webservices[item]['variables'][var]['value'] = tmp
+                if self.webservices[item]['variables'][var]['value'] is not None \
+                        and self.webservices[item]['variables'][var]['object'].\
+                        update_value(float(self.webservices[item]['variables'][var]['value']), timestamp):
+                    output.append(self.webservices[item]['variables'][var]['object'].create_recorded_data_element())
 
         return output
 
@@ -89,6 +89,10 @@ class Process(SingleDeviceDAQProcess):
     bp_label = 'pyscada.webservice-%s'
 
     def __init__(self, dt=5, **kwargs):
+        self.last_query = 0
+        self.dt_query_data = 0
+        self.device = None
+        self.device_id = None
         self.ws_write_todo = []
         super(SingleDeviceDAQProcess, self).__init__(dt=dt, **kwargs)
 
@@ -99,12 +103,13 @@ class Process(SingleDeviceDAQProcess):
         # process webservice task
         if len(self.ws_write_todo) > 0:
             for ws_id in self.ws_write_todo:
-                WebServiceAction.object.get(id=ws_id).write_data()
-                cwt = DeviceWriteTask(variable_id=WebServiceAction.object.get(id=ws_id).write_trigger.pk, value=0,
+                WebServiceAction.objects.get(id=ws_id).write_data()
+                cwt = DeviceWriteTask(variable_id=WebServiceAction.objects.get(id=ws_id).write_trigger.pk, value=0,
                                       start=time(),
                                       user=DeviceWriteTask.objects.filter(
                                           done=True,
-                                          variable=WebServiceAction.object.get(id=ws_id).write_trigger).lastest().user)
+                                          variable=WebServiceAction.objects.get(id=ws_id).write_trigger).latest('start')
+                                      .user)
                 cwt.save()
         self.ws_write_todo = []
 
@@ -117,9 +122,9 @@ class Process(SingleDeviceDAQProcess):
             tmp_data = self.device.write_data(task.variable.id, task.value, task)
             if isinstance(tmp_data, list):
                 if len(tmp_data) > 0:
-                    if hasattr(task.variable, 'webservicevariable') and task.value is True:
-                        for ws in task.variable.webserviceaction_set.filter(active=1, webservice_RW=1,
-                                                                            write_trigger=task.variable):
+                    if hasattr(task.variable, 'webservicevariable') and task.value:
+                        for ws in task.variable.ws_write_trigger.filter(active=1, webservice_RW=1,
+                                                                        write_trigger=task.variable):
                             self.ws_write_todo.append(ws.pk)
                     task.done = True
                     task.finished = time()

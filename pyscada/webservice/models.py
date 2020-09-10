@@ -44,7 +44,8 @@ class WebServiceAction(models.Model):
     webservice_mode = models.PositiveSmallIntegerField(default=0, choices=webservice_mode_choices)
     webservice_RW_choices = ((0, 'Read'), (1, 'Write'),)
     webservice_RW = models.PositiveSmallIntegerField(default=0, choices=webservice_RW_choices)
-    write_trigger = models.ForeignKey(Variable, null=True, on_delete=models.CASCADE, related_name="ws_write_trigger")
+    write_trigger = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.CASCADE,
+                                      related_name="ws_write_trigger")
     path = models.CharField(max_length=400, null=True, blank=True, help_text="look at the readme")
     variables = models.ManyToManyField(Variable, related_name="ws_variables")
     active = models.BooleanField(default=True)
@@ -84,18 +85,17 @@ class WebServiceAction(models.Model):
         if self.webservice_RW != 1:
             return False
         path = self.path
-        for var_id in self.variables.all():
-            v = Variable.object.get(pk=var_id)
+        for var in self.variables.all():
             if device is None:
-                device = v.device
-            elif device != v.device:
+                device = var.device
+            elif device != var.device:
                 logger.warning("WebService Write action with id " + self.id + " have variables with different devices")
-            if v.query_prev_value():
-                path.replace("$" + var_id, v.prev_value)
+            if var.query_prev_value():
+                path = path.replace("$" + str(var.id), str(var.prev_value))
             else:
-                logger.debug("WS Write - Var id " + var_id + " has no prev value")
+                logger.debug("WS Write - Var " + var + " has no prev value")
                 return False
-        ws_path = device.webservicedevice.ip_or_dns + self.path
+        ws_path = device.webservicedevice.ip_or_dns + path
         try:
             res = urlopen(ws_path)
         except:
