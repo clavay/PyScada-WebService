@@ -54,18 +54,27 @@ class Device:
                 if self.webservices[item]['variables'][var]['value'] is not None and\
                         self.webservices[item]['object'].webservice_RW:
                     logger.warning("Variable " + str(var) + " is in more than one WebService")
-                if "text/xml" in res[path]["content_type"]:
-                    self.webservices[item]['variables'][var]['value'] = \
-                        res[path]["result"].find(self.webservices[item]['variables'][var]['variable_path']).text
-                elif "application/json" in res[path]["content_type"]:
-                    tmp = res[path]["result"]
-                    for key in self.webservices[item]['variables'][var]['variable_path'].split():
-                        tmp = tmp.get(key, {})
-                    self.webservices[item]['variables'][var]['value'] = tmp
-                if self.webservices[item]['variables'][var]['value'] is not None \
-                        and self.webservices[item]['variables'][var]['object'].\
-                        update_value(float(self.webservices[item]['variables'][var]['value']), timestamp):
-                    output.append(self.webservices[item]['variables'][var]['object'].create_recorded_data_element())
+                try:
+                    if "text/xml" in res[path]["content_type"]:
+                        self.webservices[item]['variables'][var]['value'] = \
+                            res[path]["result"].find(self.webservices[item]['variables'][var]['variable_path']).text
+                    elif "application/json" in res[path]["content_type"]:
+                        tmp = res[path]["result"]
+                        for key in self.webservices[item]['variables'][var]['variable_path'].split():
+                            tmp = tmp.get(key, {})
+                        self.webservices[item]['variables'][var]['value'] = tmp
+                except KeyError:
+                    logger.error("content_type missing in :")
+                    logger.error(res[path])
+                    self.webservices[item]['variables'][var]['value'] = None
+                try:
+                    if self.webservices[item]['variables'][var]['value'] is not None \
+                            and self.webservices[item]['variables'][var]['object'].\
+                            update_value(float(self.webservices[item]['variables'][var]['value']), timestamp):
+                        output.append(self.webservices[item]['variables'][var]['object'].create_recorded_data_element())
+                except ValueError:
+                    # logger.debug(str(var) + " - value is : " + str(self.webservices[item]['variables'][var]['value']))
+                    pass
 
         return output
 
