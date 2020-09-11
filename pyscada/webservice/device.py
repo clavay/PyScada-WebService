@@ -28,9 +28,12 @@ class Device:
             self.variables[var.pk]['object'] = var
             self.variables[var.pk]['value'] = None
             for ws in var.ws_variables.filter(active=1, webservice_RW=0):
-                self.webservices[ws.pk] = {}
-                self.webservices[ws.pk]['object'] = ws
-                self.webservices[ws.pk]['variables'] = {}
+                try:
+                    self.webservices[ws.pk]['object']
+                except KeyError:
+                    self.webservices[ws.pk] = {}
+                    self.webservices[ws.pk]['object'] = ws
+                    self.webservices[ws.pk]['variables'] = {}
                 self.webservices[ws.pk]['variables'][var.pk] = {}
                 self.webservices[ws.pk]['variables'][var.pk]['object'] = var
                 self.webservices[ws.pk]['variables'][var.pk]['value'] = None

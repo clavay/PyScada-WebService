@@ -41,8 +41,8 @@ class WebServiceVariableAdminInline(admin.StackedInline):
 
 
 class WebServiceVariableAdmin(VariableAdmin):
-    list_display = ('id', 'name', 'description', 'unit', 'device_name', 'value_class', 'active', 'writeable')
-    list_editable = ('active', 'writeable',)
+    list_display = ('id', 'name', 'description', 'unit', 'device', 'value_class', 'active', 'writeable', 'path')
+    list_editable = ('unit', 'device', 'value_class', 'active', 'writeable')
     list_display_links = ('name',)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):

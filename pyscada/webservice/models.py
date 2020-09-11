@@ -60,8 +60,7 @@ class WebServiceAction(models.Model):
             try:
                 paths[variables[var_id]['device_path'] + self.path][var_id] = variables[var_id]['variable_path']
                 paths[variables[var_id]['device_path'] + self.path]['proxy'] = variables[var_id]['proxy']
-
-            except KeyError:
+            except KeyError as e:
                 paths[variables[var_id]['device_path'] + self.path] = {}
                 paths[variables[var_id]['device_path'] + self.path][var_id] = variables[var_id]['variable_path']
                 paths[variables[var_id]['device_path'] + self.path]['proxy'] = variables[var_id]['proxy']
@@ -81,6 +80,7 @@ class WebServiceAction(models.Model):
                 res = None
                 out[ws_path]["content_type"] = None
                 out[ws_path]["ws_path"] = ws_path
+                logger.debug(e)
                 pass
             if res is not None and res.status_code == 200:
                 out[ws_path]["content_type"] = res.headers['Content-type']
@@ -138,3 +138,6 @@ class ExtendedWebServiceVariable(Variable):
         proxy = True
         verbose_name = 'WebService Variable'
         verbose_name_plural = 'WebService Variables'
+
+    def path(self):
+        return self.webservicevariable.path
