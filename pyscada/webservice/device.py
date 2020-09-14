@@ -69,6 +69,10 @@ class Device:
                     self.webservices[item]['variables'][var]['value'] = None
                 except TypeError:
                     self.webservices[item]['variables'][var]['value'] = None
+                except AttributeError:
+                    logger.error(self.webservices[item]['variables'][var]['variable_path'] + " not found in " +
+                                 res[path]["result"])
+                    self.webservices[item]['variables'][var]['value'] = None
                 try:
                     if self.webservices[item]['variables'][var]['value'] is not None \
                             and self.webservices[item]['variables'][var]['object'].\
