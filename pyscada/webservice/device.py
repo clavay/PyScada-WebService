@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from pyscada.utils.scheduler import SingleDeviceDAQProcess
-from pyscada.models import DeviceWriteTask
+from pyscada.models import DeviceWriteTask, DeviceReadTask
 from .models import WebServiceAction
 
 from time import time
@@ -64,14 +64,13 @@ class Device:
                             tmp = tmp.get(key, {})
                         self.webservices[item]['variables'][var]['value'] = tmp
                 except KeyError:
-                    logger.error("content_type missing in :")
-                    logger.error(res[path])
+                    logger.error("content_type missing in " + str(path) + " : " + str(res[path]))
                     self.webservices[item]['variables'][var]['value'] = None
                 except TypeError:
                     self.webservices[item]['variables'][var]['value'] = None
                 except AttributeError:
-                    logger.error(self.webservices[item]['variables'][var]['variable_path'] + " not found in " +
-                                 res[path]["result"])
+                    logger.error(str(self.webservices[item]['variables'][var]['variable_path']) + " not found in " +
+                                 str(res[path]["result"]))
                     self.webservices[item]['variables'][var]['value'] = None
                 try:
                     if self.webservices[item]['variables'][var]['value'] is not None \
@@ -161,15 +160,27 @@ class Process(SingleDeviceDAQProcess):
             if len(data) > 0:
                 return 1, data
 
-        if time() - self.last_query > self.dt_query_data:
+        if time() - self.last_query > self.dt_query_data or \
+                DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                              device_id=self.device_id).count():
             self.last_query = time()
             # Query data
             if self.device is not None:
                 tmp_data = self.device.request_data()
             else:
+                for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                          device_id=self.device_id).order_by('start'):
+                    task.failed = True
+                    task.finished = time()
+                    task.save()
                 return 1, None
             if isinstance(tmp_data, list):
                 if len(tmp_data) > 0:
+                    for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                              device_id=self.device_id).order_by('start'):
+                        task.done = True
+                        task.finished = time()
+                        task.save()
                     return 1, [tmp_data, ]
 
         return 1, None
