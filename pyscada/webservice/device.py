@@ -67,6 +67,8 @@ class Device:
                     logger.error("content_type missing in :")
                     logger.error(res[path])
                     self.webservices[item]['variables'][var]['value'] = None
+                except TypeError:
+                    self.webservices[item]['variables'][var]['value'] = None
                 try:
                     if self.webservices[item]['variables'][var]['value'] is not None \
                             and self.webservices[item]['variables'][var]['object'].\
