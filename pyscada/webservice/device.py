@@ -72,6 +72,10 @@ class Device:
                     logger.error(str(self.webservices[item]['variables'][var]['variable_path']) + " not found in " +
                                  str(res[path]["result"]))
                     self.webservices[item]['variables'][var]['value'] = None
+                except SyntaxError:
+                    logger.error(str(self.webservices[item]['variables'][var]['variable_path']) +
+                                 " : XPath syntax error ")
+                    self.webservices[item]['variables'][var]['value'] = None
                 try:
                     if self.webservices[item]['variables'][var]['value'] is not None \
                             and self.webservices[item]['variables'][var]['object'].\
