@@ -82,7 +82,7 @@ class Device:
                             update_value(float(self.webservices[item]['variables'][var]['value']), timestamp):
                         output.append(self.webservices[item]['variables'][var]['object'].create_recorded_data_element())
                 except ValueError:
-                    # logger.debug(str(var) + " - value is : " + str(self.webservices[item]['variables'][var]['value']))
+                    logger.debug(str(var) + " - value is : " + str(self.webservices[item]['variables'][var]['value']))
                     pass
 
         return output

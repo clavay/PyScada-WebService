@@ -89,6 +89,9 @@ class WebServiceAction(models.Model):
                     out[ws_path]["result"] = ET.fromstring(res.text)
                 elif "application/json" in out[ws_path]["content_type"]:
                     out[ws_path]["result"] = res.json()
+            elif res is not None:
+                logger.debug(str(ws_path) + " - status code = " + str(res.status_code))
+                pass
         return out
 
     def write_data(self):
