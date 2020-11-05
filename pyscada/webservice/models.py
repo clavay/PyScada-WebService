@@ -103,7 +103,8 @@ class WebServiceAction(models.Model):
             if device is None:
                 device = var.device
             elif device != var.device:
-                logger.warning("WebService Write action with id " + self.id + " have variables with different devices")
+                logger.warning("WebService Write action with id " + str(self.id) +
+                               " have variables with different devices")
             if var.query_prev_value():
                 path = path.replace("$" + str(var.id), str(var.prev_value))
             else:
@@ -120,7 +121,7 @@ class WebServiceAction(models.Model):
             if res is None:
                 logger.debug("WS Write - res is None")
             else:
-                logger.debug("WS Write - res code is " + res.status_code)
+                logger.debug("WS Write - res code is " + str(res.status_code))
             return False
 
     def save(self, *args, **kwargs):
