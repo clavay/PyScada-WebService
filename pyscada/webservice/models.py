@@ -50,6 +50,8 @@ class WebServiceAction(models.Model):
     variables = models.ManyToManyField(Variable, related_name="ws_variables")
     active = models.BooleanField(default=True)
 
+    timeout = 10
+
     def __str__(self):
         return self.name
 
@@ -73,9 +75,9 @@ class WebServiceAction(models.Model):
                         "https": paths[ws_path]['proxy'],
                         "ftp": paths[ws_path]['proxy']
                     }
-                    res = requests.get(ws_path, proxies=proxy_dict)
+                    res = requests.get(ws_path, proxies=proxy_dict, timeout=timeout)
                 else:
-                    res = requests.get(ws_path)
+                    res = requests.get(ws_path, timeout=timeout)
             except Exception as e:
                 res = None
                 out[ws_path]["content_type"] = None
@@ -112,7 +114,7 @@ class WebServiceAction(models.Model):
                 return False
         ws_path = device.webservicedevice.ip_or_dns + path
         try:
-            res = requests.get(ws_path)
+            res = requests.get(ws_path, timeout=timeout)
         except:
             res = None
         if res is not None and res.status_code == 200:
