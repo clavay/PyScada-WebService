@@ -46,7 +46,6 @@ class Device:
         output = []
 
         for item in self.webservices:
-            timestamp = time()
             # value = None
             res = self.webservices[item]['object'].request_data(self.webservices[item]['variables'])
             for var in self.webservices[item]['variables']:
@@ -77,6 +76,7 @@ class Device:
                                  " : XPath syntax error ")
                     self.webservices[item]['variables'][var]['value'] = None
                 try:
+                    timestamp = time()
                     if self.webservices[item]['variables'][var]['value'] is not None \
                             and self.webservices[item]['variables'][var]['object'].\
                             update_value(float(self.webservices[item]['variables'][var]['value']), timestamp):
