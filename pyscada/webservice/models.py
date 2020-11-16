@@ -75,9 +75,9 @@ class WebServiceAction(models.Model):
                         "https": paths[ws_path]['proxy'],
                         "ftp": paths[ws_path]['proxy']
                     }
-                    res = requests.get(ws_path, proxies=proxy_dict, timeout=timeout)
+                    res = requests.get(ws_path, proxies=proxy_dict, timeout=self.timeout)
                 else:
-                    res = requests.get(ws_path, timeout=timeout)
+                    res = requests.get(ws_path, timeout=self.timeout)
             except Exception as e:
                 res = None
                 out[ws_path]["content_type"] = None
