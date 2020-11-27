@@ -51,6 +51,8 @@ class WebServiceAction(models.Model):
     active = models.BooleanField(default=True)
 
     timeout = 10
+    log_error_1_count = 0
+    log_error_2_count = 0
 
     def __str__(self):
         return self.name
@@ -82,8 +84,11 @@ class WebServiceAction(models.Model):
                 res = None
                 out[ws_path]["content_type"] = None
                 out[ws_path]["ws_path"] = ws_path
-                logger.debug(e)
+                if not self.log_error_1_count:
+                    logger.debug(e)
+                self.log_error_1_count += 1
                 pass
+            self.log_error_1_count = 0
             if res is not None and res.status_code == 200:
                 out[ws_path]["content_type"] = res.headers['Content-type']
                 out[ws_path]["ws_path"] = ws_path
@@ -91,9 +96,15 @@ class WebServiceAction(models.Model):
                     out[ws_path]["result"] = ET.fromstring(res.text)
                 elif "application/json" in out[ws_path]["content_type"]:
                     out[ws_path]["result"] = res.json()
+                self.log_error_2_count = 0
             elif res is not None:
-                logger.debug(str(ws_path) + " - status code = " + str(res.status_code))
-                pass
+                if not self.log_error_2_count:
+                    logger.debug(str(ws_path) + " - status code = " + str(res.status_code))
+                self.log_error_2_count +=1
+            else:
+                if not self.log_error_2_count:
+                    logger.debug(str(ws_path) + " - get request is None")
+                self.log_error_2_count +=1
         return out
 
     def write_data(self):
