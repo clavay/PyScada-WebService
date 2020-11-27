@@ -80,6 +80,7 @@ class WebServiceAction(models.Model):
                     res = requests.get(ws_path, proxies=proxy_dict, timeout=self.timeout)
                 else:
                     res = requests.get(ws_path, timeout=self.timeout)
+                self.log_error_1_count = 0
             except Exception as e:
                 res = None
                 out[ws_path]["content_type"] = None
@@ -88,7 +89,6 @@ class WebServiceAction(models.Model):
                     logger.debug(e)
                 self.log_error_1_count += 1
                 pass
-            self.log_error_1_count = 0
             if res is not None and res.status_code == 200:
                 out[ws_path]["content_type"] = res.headers['Content-type']
                 out[ws_path]["ws_path"] = ws_path
