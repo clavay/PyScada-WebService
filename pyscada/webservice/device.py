@@ -84,6 +84,9 @@ class Device:
                 except ValueError:
                     logger.debug(str(var) + " - value is : " + str(self.webservices[item]['variables'][var]['value']))
                     pass
+                except TypeError:
+                    logger.debug(str(var) + " - value is : " + str(self.webservices[item]['variables'][var]['value']))
+                    pass
 
         return output
 
