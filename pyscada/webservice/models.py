@@ -7,6 +7,7 @@ from pyscada.models import Variable
 import requests
 
 import xml.etree.ElementTree as ET
+from json.decoder import JSONDecodeError
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -95,8 +96,14 @@ class WebServiceAction(models.Model):
                 if "text/xml" in out[ws_path]["content_type"]:
                     out[ws_path]["result"] = ET.fromstring(res.text)
                 elif "application/json" in out[ws_path]["content_type"]:
-                    out[ws_path]["result"] = res.json()
-                self.log_error_2_count = 0
+                    try:
+                        out[ws_path]["result"] = res.json()
+                        self.log_error_2_count = 0
+                    except json.decoder.JSONDecodeError:
+                        if not self.log_error_2_count:
+                            logger.debug(str(ws_path) + " - JSONDecodeError : " + str(res.text))
+                        self.log_error_2_count +=1
+                        out[ws_path]["content_type"] = None
             elif res is not None:
                 if not self.log_error_2_count:
                     logger.debug(str(ws_path) + " - status code = " + str(res.status_code))
