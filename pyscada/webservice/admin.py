@@ -20,6 +20,9 @@ class WebServiceDeviceAdminInline(admin.StackedInline):
 
 
 class WebServiceDeviceAdmin(DeviceAdmin):
+    save_as = True
+    save_as_continue = True
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
             kwargs['queryset'] = DeviceProtocol.objects.filter(pk=PROTOCOL_ID)
@@ -44,6 +47,8 @@ class WebServiceVariableAdmin(VariableAdmin):
     list_display = ('id', 'name', 'description', 'unit', 'device', 'value_class', 'active', 'writeable', 'path')
     list_editable = ('unit', 'device', 'value_class', 'active', 'writeable')
     list_display_links = ('name',)
+    save_as = True
+    save_as_continue = True
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'device':
@@ -63,6 +68,8 @@ class WebServiceVariableAdmin(VariableAdmin):
 class WebServiceActionAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'webservice_mode', 'path')
     filter_horizontal = ('variables',)
+    save_as = True
+    save_as_continue = True
 
 
 admin_site.register(ExtendedWebServiceDevice, WebServiceDeviceAdmin)

@@ -43,6 +43,8 @@ class WebServiceAction(models.Model):
     name = models.CharField(max_length=254)
     webservice_mode_choices = ((0, 'Path'), (1, 'GET'), (2, 'POST'),)
     webservice_mode = models.PositiveSmallIntegerField(default=0, choices=webservice_mode_choices)
+    webservice_content_type_choices = ((0, 'Auto'), (1, 'XML'), (2, 'JSON'),)
+    webservice_content_type = models.PositiveSmallIntegerField(default=0, choices=webservice_content_type_choices)
     webservice_RW_choices = ((0, 'Read'), (1, 'Write'),)
     webservice_RW = models.PositiveSmallIntegerField(default=0, choices=webservice_RW_choices)
     write_trigger = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.CASCADE,
@@ -93,25 +95,25 @@ class WebServiceAction(models.Model):
             if res is not None and res.status_code == 200:
                 out[ws_path]["content_type"] = res.headers['Content-type']
                 out[ws_path]["ws_path"] = ws_path
-                if "text/xml" in out[ws_path]["content_type"]:
+                if "text/xml" in out[ws_path]["content_type"] or self.webservice_content_type == 1:
                     out[ws_path]["result"] = ET.fromstring(res.text)
-                elif "application/json" in out[ws_path]["content_type"]:
+                elif "application/json" in out[ws_path]["content_type"] or self.webservice_content_type == 2:
                     try:
                         out[ws_path]["result"] = res.json()
                         self.log_error_2_count = 0
-                    except json.decoder.JSONDecodeError:
+                    except JSONDecodeError:
                         if not self.log_error_2_count:
                             logger.debug(str(ws_path) + " - JSONDecodeError : " + str(res.text))
-                        self.log_error_2_count +=1
+                        self.log_error_2_count += 1
                         out[ws_path]["content_type"] = None
             elif res is not None:
                 if not self.log_error_2_count:
                     logger.debug(str(ws_path) + " - status code = " + str(res.status_code))
-                self.log_error_2_count +=1
+                self.log_error_2_count += 1
             else:
                 if not self.log_error_2_count:
                     logger.debug(str(ws_path) + " - get request is None")
-                self.log_error_2_count +=1
+                self.log_error_2_count += 1
         return out
 
     def write_data(self):
