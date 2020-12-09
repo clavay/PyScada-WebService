@@ -37,7 +37,7 @@ class Device:
                 self.webservices[ws.pk]['variables'][var.pk] = {}
                 self.webservices[ws.pk]['variables'][var.pk]['object'] = var
                 self.webservices[ws.pk]['variables'][var.pk]['value'] = None
-                self.webservices[ws.pk]['variables'][var.pk]['device_path'] = var.device.webservicedevice.ip_or_dns
+                self.webservices[ws.pk]['variables'][var.pk]['device_path'] = var.device.webservicedevice.url
                 self.webservices[ws.pk]['variables'][var.pk]['proxy'] = var.device.webservicedevice.http_proxy
                 self.webservices[ws.pk]['variables'][var.pk]['variable_path'] = var.webservicevariable.path
 
@@ -54,10 +54,12 @@ class Device:
                         self.webservices[item]['object'].webservice_RW:
                     logger.warning("Variable " + str(var) + " is in more than one WebService")
                 try:
-                    if "text/xml" in res[path]["content_type"]:
+                    if "text/xml" in res[path]["content_type"] or \
+                            self.webservices[item]['object'].webservice_content_type == 1:
                         self.webservices[item]['variables'][var]['value'] = \
                             res[path]["result"].find(self.webservices[item]['variables'][var]['variable_path']).text
-                    elif "application/json" in res[path]["content_type"]:
+                    elif "application/json" in res[path]["content_type"] or \
+                            self.webservices[item]['object'].webservice_content_type == 2:
                         tmp = res[path]["result"]
                         for key in self.webservices[item]['variables'][var]['variable_path'].split():
                             tmp = tmp.get(key, {})

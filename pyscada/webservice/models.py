@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @python_2_unicode_compatible
 class WebServiceDevice(models.Model):
     webservice_device = models.OneToOneField(Device, null=True, blank=True, on_delete=models.CASCADE)
-    ip_or_dns = models.CharField(max_length=254)
+    url = models.URLField(max_length=254)
     http_proxy = models.CharField(max_length=254, null=True, blank=True)
 
     def __str__(self):
@@ -132,9 +132,9 @@ class WebServiceAction(models.Model):
             else:
                 logger.debug("WS Write - Var " + var + " has no prev value")
                 return False
-        ws_path = device.webservicedevice.ip_or_dns + path
+        ws_path = device.webservicedevice.url + path
         try:
-            res = requests.get(ws_path, timeout=timeout)
+            res = requests.get(ws_path, timeout=self.timeout)
         except:
             res = None
         if res is not None and res.status_code == 200:
