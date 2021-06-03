@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from pyscada.models import Device
 from pyscada.models import Variable
+from . import PROTOCOL_ID
 
 import requests
 
@@ -24,6 +25,11 @@ class WebServiceDevice(models.Model):
     url = models.URLField(max_length=254)
     http_proxy = models.CharField(max_length=254, null=True, blank=True)
 
+    protocol_id = PROTOCOL_ID
+
+    def parent_device(self):
+        return self.webservice_device
+
     def __str__(self):
         return self.webservice_device.short_name
 
@@ -33,6 +39,8 @@ class WebServiceVariable(models.Model):
     webservice_variable = models.OneToOneField(Variable, null=True, blank=True, on_delete=models.CASCADE)
     path = models.CharField(max_length=254, null=True, blank=True,
                             help_text="look at the readme")
+
+    protocol_id = PROTOCOL_ID
 
     def __str__(self):
         return self.id.__str__() + "-" + self.webservice_variable.short_name

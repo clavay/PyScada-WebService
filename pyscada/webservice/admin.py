@@ -72,6 +72,6 @@ class WebServiceActionAdmin(admin.ModelAdmin):
     save_as_continue = True
 
 
-admin_site.register(ExtendedWebServiceDevice, WebServiceDeviceAdmin)
-admin_site.register(ExtendedWebServiceVariable, WebServiceVariableAdmin)
+# admin_site.register(ExtendedWebServiceDevice, WebServiceDeviceAdmin)
+# admin_site.register(ExtendedWebServiceVariable, WebServiceVariableAdmin)
 admin_site.register(WebServiceAction, WebServiceActionAdmin)
