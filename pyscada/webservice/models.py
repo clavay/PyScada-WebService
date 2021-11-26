@@ -138,7 +138,7 @@ class WebServiceAction(models.Model):
             if var.query_prev_value():
                 path = path.replace("$" + str(var.id), str(var.prev_value))
             else:
-                logger.debug("WS Write - Var " + var + " has no prev value")
+                logger.debug("WS Write - Var " + str(var) + " has no prev value")
                 return False
         ws_path = device.webservicedevice.url + path
         try:

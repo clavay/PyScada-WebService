@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from pyscada.utils.scheduler import SingleDeviceDAQProcess
 from pyscada.models import DeviceWriteTask, DeviceReadTask
 from .models import WebServiceAction
+from pyscada.webservice import PROTOCOL_ID
 
 from time import time
 
@@ -112,7 +113,7 @@ class Device:
 
 
 class Process(SingleDeviceDAQProcess):
-    device_filter = dict(webservicedevice__isnull=False)
+    device_filter = dict(webservicedevice__isnull=False, protocol_id=PROTOCOL_ID)
     bp_label = 'pyscada.webservice-%s'
 
     def __init__(self, dt=5, **kwargs):
@@ -137,7 +138,7 @@ class Process(SingleDeviceDAQProcess):
                                           done=True,
                                           variable=WebServiceAction.objects.get(id=ws_id).write_trigger).latest('start')
                                       .user)
-                cwt.save()
+                cwt.create_and_notificate(cwt)
         self.ws_write_todo = []
 
         # process write tasks
