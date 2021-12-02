@@ -28,7 +28,10 @@ class WebServiceDevice(models.Model):
     protocol_id = PROTOCOL_ID
 
     def parent_device(self):
-        return self.webservice_device
+        try:
+            return self.webservice_device
+        except:
+            return None
 
     def __str__(self):
         return self.webservice_device.short_name
