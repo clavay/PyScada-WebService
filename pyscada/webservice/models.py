@@ -64,8 +64,8 @@ class WebServiceAction(models.Model):
     path = models.CharField(max_length=400, null=True, blank=True, help_text="look at the readme")
     headers = models.CharField(max_length=400, null=True, blank=True, help_text="For exemple: {'Authorization': 'TOKEN', 'Content-Type': 'application/json',}")
     payload = models.CharField(max_length=400, null=True, blank=True, help_text="For exemple: {'type': 'consumption_load_curve', 'usage_point_id': 'ID',}")
-    variables = models.ManyToManyField(Variable, related_name="ws_variables")
-    variable_properties = models.ManyToManyField(VariableProperty, related_name="ws_variable_properties")
+    variables = models.ManyToManyField(Variable, blank=True, related_name="ws_variables")
+    variable_properties = models.ManyToManyField(VariableProperty, blank=True, related_name="ws_variable_properties")
     active = models.BooleanField(default=True)
 
     timeout = 10

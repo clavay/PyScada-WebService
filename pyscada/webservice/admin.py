@@ -67,7 +67,7 @@ class WebServiceVariableAdmin(VariableAdmin):
 
 class WebServiceActionAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'webservice_mode', 'path')
-    filter_horizontal = ('variables',)
+    filter_horizontal = ('variables', 'variable_properties',)
     save_as = True
     save_as_continue = True
 
