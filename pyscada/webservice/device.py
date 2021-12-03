@@ -5,6 +5,8 @@ from pyscada.models import DeviceWriteTask, DeviceReadTask
 from .models import WebServiceAction
 from pyscada.webservice import PROTOCOL_ID
 
+from django.db.models import Q
+
 from time import time
 
 import logging
@@ -35,6 +37,7 @@ class Device:
                     self.webservices[ws.pk] = {}
                     self.webservices[ws.pk]['object'] = ws
                     self.webservices[ws.pk]['variables'] = {}
+                    self.webservices[ws.pk]['variable_properties'] = {}
                 self.webservices[ws.pk]['variables'][var.pk] = {}
                 self.webservices[ws.pk]['variables'][var.pk]['object'] = var
                 self.webservices[ws.pk]['variables'][var.pk]['value'] = None
@@ -42,13 +45,67 @@ class Device:
                 self.webservices[ws.pk]['variables'][var.pk]['proxy'] = var.device.webservicedevice.http_proxy
                 self.webservices[ws.pk]['variables'][var.pk]['variable_path'] = var.webservicevariable.path
 
+            for vp in var.variableproperty_set.all():
+                if not hasattr(vp.variable, 'webservicevariable'):
+                    continue
+                for ws in vp.ws_variable_properties.filter(active=1, webservice_RW=0):
+                    try:
+                        self.webservices[ws.pk]['object']
+                    except KeyError:
+                        self.webservices[ws.pk] = {}
+                        self.webservices[ws.pk]['object'] = ws
+                        self.webservices[ws.pk]['variables'] = {}
+                        self.webservices[ws.pk]['variable_properties'] = {}
+                    self.webservices[ws.pk]['variable_properties'][vp.pk] = {}
+                    self.webservices[ws.pk]['variable_properties'][vp.pk]['object'] = vp
+                    self.webservices[ws.pk]['variable_properties'][vp.pk]['value'] = None
+                    self.webservices[ws.pk]['variable_properties'][vp.pk]['device_path'] = vp.variable.device.webservicedevice.url
+                    self.webservices[ws.pk]['variable_properties'][vp.pk]['proxy'] = vp.variable.device.webservicedevice.http_proxy
+                    self.webservices[ws.pk]['variable_properties'][vp.pk]['variable_path'] = vp.variable.webservicevariable.path
+
     def request_data(self):
+        if self.device.webservicedevice.web_service_handler is not None and \
+            self.device.webservicedevice.web_service_handler.handler_path is not None:
+            sys.path.append(self.device.webservicedevice.web_service_handler.handler_path)
+        else:
+            return self._request_data()
+        try:
+            mod = __import__(self.device.webservicedevice.web_service_handler.handler_class, fromlist=['Handler'])
+            device_handler = getattr(mod, 'Handler')
+            self._h = device_handler(self.device, self.variables, self.webservices)
+            self.driver_handler_ok = True
+        except ImportError:
+            self.driver_handler_ok = False
+            logger.error("Handler import error : %s" % device.short_name)
+            return None
+
+        if self.driver_handler_ok:
+            return self.request_data_handler()
+
+    def _request_data_handler(self):
+        """
+        request data from the instrument/device
+        """
+        output = []
+
+        self._h.before_read()
+        for wsa_id in self.webservices:
+            res = self._h.read_data_and_time(wsa_id, self)
+            for item_pk in res:
+                item = self.variables[item_pk]['object']
+                for value, time in res[item_pk]:
+                        if value is not None and item.update_value(value, time):
+                            output.append(item.create_recorded_data_element())
+        self._h.after_read()
+        return output
+
+    def _request_data(self):
 
         output = []
 
         for item in self.webservices:
             # value = None
-            res = self.webservices[item]['object'].request_data(self.webservices[item]['variables'])
+            res = self.webservices[item]['object'].request_data(self)
             for var in self.webservices[item]['variables']:
                 path = self.webservices[item]['variables'][var]['device_path'] + self.webservices[item]['object'].path
                 if self.webservices[item]['variables'][var]['value'] is not None and\
@@ -143,8 +200,7 @@ class Process(SingleDeviceDAQProcess):
 
         # process write tasks
         # Do all the write task for this device starting with the oldest
-        for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                   variable__device_id=self.device_id).order_by('start'):
+        for task in DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) & (Q(variable__device_id=self.device_id) | Q(variable_property__variable__device_id=self.device_id))).order_by('start'):
             if task.variable.scaling is not None:
                 task.value = task.variable.scaling.scale_output_value(task.value)
             tmp_data = self.device.write_data(task.variable.id, task.value, task)
@@ -170,8 +226,7 @@ class Process(SingleDeviceDAQProcess):
             if len(data) > 0:
                 return 1, data
 
-        device_read_tasks = DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                          device_id=self.device_id)
+        device_read_tasks = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) & (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) | Q(variable_property__variable__device_id=self.device_id)))
 
         if time() - self.last_query > self.dt_query_data or len(device_read_tasks):
             self.last_query = time()

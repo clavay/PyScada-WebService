@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Device
-from pyscada.models import Variable
+from pyscada.models import Device, DeviceHandler
+from pyscada.models import Variable, VariableProperty
 from . import PROTOCOL_ID
 
 import requests
@@ -24,6 +24,7 @@ class WebServiceDevice(models.Model):
     webservice_device = models.OneToOneField(Device, null=True, blank=True, on_delete=models.CASCADE)
     url = models.URLField(max_length=254)
     http_proxy = models.CharField(max_length=254, null=True, blank=True)
+    web_service_handler = models.ForeignKey(DeviceHandler, null=True, on_delete=models.SET_NULL)
 
     protocol_id = PROTOCOL_ID
 
@@ -61,7 +62,10 @@ class WebServiceAction(models.Model):
     write_trigger = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.CASCADE,
                                       related_name="ws_write_trigger")
     path = models.CharField(max_length=400, null=True, blank=True, help_text="look at the readme")
+    headers = models.CharField(max_length=400, null=True, blank=True, help_text="For exemple: {'Authorization': 'TOKEN', 'Content-Type': 'application/json',}")
+    payload = models.CharField(max_length=400, null=True, blank=True, help_text="For exemple: {'type': 'consumption_load_curve', 'usage_point_id': 'ID',}")
     variables = models.ManyToManyField(Variable, related_name="ws_variables")
+    variable_properties = models.ManyToManyField(VariableProperty, related_name="ws_variable_properties")
     active = models.BooleanField(default=True)
 
     timeout = 10
@@ -71,7 +75,9 @@ class WebServiceAction(models.Model):
     def __str__(self):
         return self.name
 
-    def request_data(self, variables):
+    def request_data(self, device):
+        variables=device.webservices[self.pk]['variables']
+        variable_properties=device.webservices[self.pk]['variable_properties']
         paths = {}
         out = {}
         for var_id in variables:
