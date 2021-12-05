@@ -82,6 +82,8 @@ class WebServiceAction(models.Model):
         out = {}
         for var_id in variables:
             try:
+                if self.path is None:
+                    self.path = ''
                 paths[variables[var_id]['device_path'] + self.path][var_id] = variables[var_id]['variable_path']
                 paths[variables[var_id]['device_path'] + self.path]['proxy'] = variables[var_id]['proxy']
             except KeyError as e:

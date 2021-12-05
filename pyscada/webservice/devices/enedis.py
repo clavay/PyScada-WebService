@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.visa.devices import GenericDevice
+from pyscada.webservice.devices import GenericDevice
 from pyscada.models import VariableProperty
 
 from datetime import datetime
@@ -42,13 +42,13 @@ import datetime
 from time import sleep
 
 class DataType(object):
-    CONS_CURVE = "consumption_load_curve",  # Retourne les données de consommation par pas de 10, 30 ou 60 minutes (30 par défaut), pour chaque jour de la période demandée. La plage demandée ne peut excéder 7 jours et sur une période de moins de 24 mois et 15 jours avant la date d'appel.
-    CONS_DAILY_MAX_POWER = "daily_consumption_max_power",  # Retourne la donnée maximale de consommation par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
-    CONS_DAILY = "daily_consumption",  # Retourne les données de consommation par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
-    PROD_CURVE = "production_load_curve",  # Retourne les données de production par pas de 10, 30 ou 60 minutes (30 par défaut), pour chaque jour de la période demandée. La plage demandée ne peut excéder 7 jours et sur une période de moins de 24 mois et 15 jours avant la date d'appel.
-    PROD_DAILY = "daily_production",  # Retourne les données de production par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
-    ID = "identity",  # Retourne l'identité du client
-    CONTRACTS = "contracts",  # Retourne les données contractuelles
+    CONS_CURVE = "consumption_load_curve"  # Retourne les données de consommation par pas de 10, 30 ou 60 minutes (30 par défaut), pour chaque jour de la période demandée. La plage demandée ne peut excéder 7 jours et sur une période de moins de 24 mois et 15 jours avant la date d'appel.
+    CONS_DAILY_MAX_POWER = "daily_consumption_max_power"  # Retourne la donnée maximale de consommation par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
+    CONS_DAILY = "daily_consumption"  # Retourne les données de consommation par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
+    PROD_CURVE = "production_load_curve"  # Retourne les données de production par pas de 10, 30 ou 60 minutes (30 par défaut), pour chaque jour de la période demandée. La plage demandée ne peut excéder 7 jours et sur une période de moins de 24 mois et 15 jours avant la date d'appel.
+    PROD_DAILY = "daily_production"  # Retourne les données de production par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
+    ID = "identity"  # Retourne l'identité du client
+    CONTRACTS = "contracts"  # Retourne les données contractuelles
     ADDRESSES = "addresses"  # Retourne l'adresse du point de livraison et/ou production
 
 
@@ -86,16 +86,14 @@ class ENEDIS(object):
             return url
 
     def send_post(self, url=None, proxy_dict={}):
-        url = self.set_utl(url)
+        url = self.set_url(url)
         if type(proxy_dict) == dict and len(proxy_dict):
             self.proxy_dict = proxy_dict
         try:
             r = requests.post(url, headers=self.headers, json=self.payload, proxies=self.proxy_dict, timeout=self.timeout)
+            return r
         except Exception as e:
             logger.info(e)
-        logger.debug(r.status_code)
-        logger.debug(r.text)
-        logger.debug(r.json())
 
 
 class Handler(GenericDevice):
@@ -106,25 +104,33 @@ class Handler(GenericDevice):
     def connect(self, token, id, url=None):
         self.inst = ENEDIS(url=url, headers={'Authorization':str(token)}, payload={'usage_point_id':str(id)})
 
-    def read_data_and_time(self, ws_action, device):
+    def read_data_and_time(self, ws_action_id, device):
         """
         read values from the device
         """
         output = {}
 
-        headers = self.webservices[ws_action_id]['object'].headers
-        token = headers.get('Authorization', None)
-        payload = self.webservices[ws_action_id]['object'].payload
-        id = payload.get('usage_point_id', None)
+        try:
+            headers = device.webservices[ws_action_id]['object'].headers
+            payload = device.webservices[ws_action_id]['object'].payload
+            token = json.loads(headers).get('Authorization', None)
+            id = json.loads(payload).get('usage_point_id', None)
+        except json.decoder.JSONDecodeError as e:
+            logger.debug(e)
+            logger.debug(headers)
+            logger.debug(payload)
+            return output
         self.connect(token, id)
 
         if self.inst is None:
+            logger.debug("inst is None")
             return output
 
-        for var_id in self.webservices[ws_action_id]['variables']:
+        for var_id in device.webservices[ws_action_id]['variables']:
+            logger.debug(var_id)
             if self.inst.payload['type'] == DataType.CONS_CURVE:
-                url = self.webservices[ws_action_id]['variables'][var_id]['object'].device.get('webservicedevice').get('url')
-                proxy_dict = self.webservices[ws_action_id]['variables'][var_id]['object'].device.get('webservicedevice').get('proxy_dict')
+                url = getattr(getattr(device.webservices[ws_action_id]['variables'][var_id]['object'].device, 'webservicedevice'), 'url')
+                proxy_dict = getattr(getattr(device.webservices[ws_action_id]['variables'][var_id]['object'].device, 'webservicedevice'), 'http_proxy')
                 if type(proxy_dict) != dict:
                     proxy_dict = {
                                      "http": proxy_dict,
@@ -132,12 +138,26 @@ class Handler(GenericDevice):
                                      "ftp": proxy_dict,
                                  }
                 r = self.inst.send_post(url, proxy_dict)
-                if r.status_code == requests.codes.ok:
+                logger.debug(r)
+                if r is not None and r.status_code == requests.codes.ok:
                     interval_reading = r.json().get('meter_reading', {}).get('interval_reading', {})
                     for point in interval_reading:
+                        if var_id not in output:
+                            output[var_id] = []
                         try:
-                            output[var_id] = (point.get('value', None), datetime.datetime.fromisoformat(point.get('date', None)))
+                            value = point.get('value', None)
+                            if value is not None:
+                                value = float(value)
+                            time = point.get('date', None)
+                            if time is not None:
+                                time = datetime.datetime.fromisoformat(time).timestamp()
+                            if value is not None and time is not None:
+                                output[var_id].append((value, time))
                         except Exception as e:
                             logger.info(e)
+            else:
+                logger.debug(self.inst.payload['type'])
+                logger.debug(DataType.CONS_CURVE)
+
 
         return output

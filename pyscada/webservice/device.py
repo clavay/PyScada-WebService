@@ -64,11 +64,11 @@ class Device:
                     self.webservices[ws.pk]['variable_properties'][vp.pk]['variable_path'] = vp.variable.webservicevariable.path
 
     def request_data(self):
-        if self.device.webservicedevice.web_service_handler is not None and \
-            self.device.webservicedevice.web_service_handler.handler_path is not None:
-            sys.path.append(self.device.webservicedevice.web_service_handler.handler_path)
-        else:
+        if self.device.webservicedevice.web_service_handler is None:
             return self._request_data()
+        elif self.device.webservicedevice.web_service_handler.handler_path is not None:
+            sys.path.append(self.device.webservicedevice.web_service_handler.handler_path)
+
         try:
             mod = __import__(self.device.webservicedevice.web_service_handler.handler_class, fromlist=['Handler'])
             device_handler = getattr(mod, 'Handler')
@@ -76,11 +76,11 @@ class Device:
             self.driver_handler_ok = True
         except ImportError:
             self.driver_handler_ok = False
-            logger.error("Handler import error : %s" % device.short_name)
+            logger.error("Handler import error : %s" % self.device.short_name)
             return None
 
         if self.driver_handler_ok:
-            return self.request_data_handler()
+            return self._request_data_handler()
 
     def _request_data_handler(self):
         """
@@ -93,7 +93,7 @@ class Device:
             res = self._h.read_data_and_time(wsa_id, self)
             for item_pk in res:
                 item = self.variables[item_pk]['object']
-                for value, time in res[item_pk]:
+                for (value, time) in res[item_pk]:
                         if value is not None and item.update_value(value, time):
                             output.append(item.create_recorded_data_element())
         self._h.after_read()
