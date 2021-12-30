@@ -147,6 +147,8 @@ class WebServiceAction(models.Model):
                 logger.warning("WebService Write action with id " + str(self.id) +
                                " have variables with different devices")
             if var.query_prev_value():
+                if var.scaling is not None:
+                    var.prev_value = var.scaling.scale_output_value(var.prev_value)
                 path = path.replace("$" + str(var.id), str(var.prev_value))
             else:
                 logger.debug("WS Write - Var " + str(var) + " has no prev value")
