@@ -24,7 +24,7 @@ class WebServiceDevice(models.Model):
     webservice_device = models.OneToOneField(Device, null=True, blank=True, on_delete=models.CASCADE)
     url = models.URLField(max_length=254)
     http_proxy = models.CharField(max_length=254, null=True, blank=True)
-    web_service_handler = models.ForeignKey(DeviceHandler, null=True, on_delete=models.SET_NULL)
+    web_service_handler = models.ForeignKey(DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL)
 
     protocol_id = PROTOCOL_ID
 
