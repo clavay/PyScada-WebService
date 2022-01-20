@@ -16,15 +16,15 @@ logger = logging.getLogger(__name__)
 """Object based access to the Enedis API
 Example::
 
-    import sys
-    sys.path.append(".")
-    from enedis import ENEDIS
-    TOKEN='your_token'
-    ID='your_id'
-    e=ENEDIS(headers={'Authorization':TOKEN}, payload={'usage_point_id':ID})
-    r=e.send_post()
-    print(r.status_code)
-    prit(r.json())
+import sys
+sys.path.append(".")
+from enedis import ENEDIS
+TOKEN='your_token'
+ID='your_id'
+e=ENEDIS(headers={'Authorization':TOKEN}, payload={'usage_point_id':ID})
+r=e.send_post()
+print(r.status_code)
+print(r.json())
 
 """
 __author__ = "Camille Lavayssière"
@@ -127,7 +127,7 @@ class Handler(GenericDevice):
             return output
 
         for var_id in device.webservices[ws_action_id]['variables']:
-            logger.debug(var_id)
+            #logger.debug(var_id)
             if self.inst.payload['type'] == DataType.CONS_CURVE:
                 url = getattr(getattr(device.webservices[ws_action_id]['variables'][var_id]['object'].device, 'webservicedevice'), 'url')
                 proxy_dict = getattr(getattr(device.webservices[ws_action_id]['variables'][var_id]['object'].device, 'webservicedevice'), 'http_proxy')
@@ -138,7 +138,7 @@ class Handler(GenericDevice):
                                      "ftp": proxy_dict,
                                  }
                 r = self.inst.send_post(url, proxy_dict)
-                logger.debug(r)
+                #logger.debug(r)
                 if r is not None and r.status_code == requests.codes.ok:
                     interval_reading = r.json().get('meter_reading', {}).get('interval_reading', {})
                     for point in interval_reading:
