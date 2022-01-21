@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.webservice.devices import GenericDevice
-from pyscada.models import VariableProperty
-
+import os
 from datetime import datetime
 from math import floor
 import requests
@@ -13,12 +11,25 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+if os.getenv('DJANGO_SETTINGS_MODULE') is not None:
+    from pyscada.webservice.devices import GenericDevice
+else:
+    import sys
+    logger.debug("Django settings not configured.")
+    GenericDevice = object
+    logging.basicConfig(
+        level=logging.DEBUG,
+        handlers=[
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+
 """Object based access to the Enedis API
-Example::
+Example:
 
 import sys
 sys.path.append(".")
-from enedis import ENEDIS
+from enedis import ENEDIS, DataType
 TOKEN='your_token'
 ID='your_id'
 e=ENEDIS(headers={'Authorization':TOKEN}, payload={'usage_point_id':ID})
@@ -26,7 +37,14 @@ r=e.send_post()
 print(r.status_code)
 print(r.json())
 
+# Other Example:
+print(DataType.__dict__)
+e=ENEDIS(headers={'Authorization':TOKEN}, payload={'type':DataType.PROD_DAILY,'usage_point_id':ID, 'start':'2022-01-01', 'end':'2022-01-05'})
+r=e.send_post()
+print(r.status_code)
+print(r.json())
 """
+
 __author__ = "Camille Lavayssière"
 __copyright__ = "Copyright 2021, Université de Pau et des Pays de l'Adour"
 __credits__ = []
@@ -42,6 +60,17 @@ import datetime
 from time import sleep
 
 class DataType(object):
+    """
+    CONS_CURVE  # Retourne les données de consommation par pas de 10, 30 ou 60 minutes (30 par défaut), pour chaque jour de la période demandée. La plage demandée ne peut excéder 7 jours et sur une période de moins de 24 mois et 15 jours avant la date d'appel.
+    CONS_DAILY_MAX_POWER  # Retourne la donnée maximale de consommation par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
+    CONS_DAILY  # Retourne les données de consommation par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
+    PROD_CURVE  # Retourne les données de production par pas de 10, 30 ou 60 minutes (30 par défaut), pour chaque jour de la période demandée. La plage demandée ne peut excéder 7 jours et sur une période de moins de 24 mois et 15 jours avant la date d'appel.
+    PROD_DAILY  # Retourne les données de production par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
+    ID  # Retourne l'identité du client
+    CONTRACTS  # Retourne les données contractuelles
+    ADDRESSES  # Retourne l'adresse du point de livraison et/ou production
+    """
+
     CONS_CURVE = "consumption_load_curve"  # Retourne les données de consommation par pas de 10, 30 ou 60 minutes (30 par défaut), pour chaque jour de la période demandée. La plage demandée ne peut excéder 7 jours et sur une période de moins de 24 mois et 15 jours avant la date d'appel.
     CONS_DAILY_MAX_POWER = "daily_consumption_max_power"  # Retourne la donnée maximale de consommation par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
     CONS_DAILY = "daily_consumption"  # Retourne les données de consommation par pas de 1 jour, pour chaque jour de la période demandée. La plage demandée ne peut être que sur une période de moins de 36 mois et 15 jours avant la date d'appel.
@@ -81,7 +110,7 @@ class ENEDIS(object):
 
     def set_url(self, url=None):
         if url is None:
-            return "http://enedisgateway.tech/api"
+            return "https://enedisgateway.tech/api"
         else:
             return url
 
