@@ -2,8 +2,7 @@
 from __future__ import unicode_literals
 
 import os
-from datetime import datetime
-from math import floor
+import datetime
 import requests
 import json
 
@@ -55,9 +54,6 @@ __email__ = "clavayssiere@univ-pau.fr"
 __status__ = "Beta"
 __docformat__ = 'reStructuredText'
 
-from django.utils.timezone import now, make_aware, is_naive
-import datetime
-from time import sleep
 
 class DataType(object):
     """
