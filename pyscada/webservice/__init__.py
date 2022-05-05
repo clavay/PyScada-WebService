@@ -3,10 +3,8 @@ from __future__ import unicode_literals
 
 import pyscada
 
-__version__ = '0.7.0rc18'
+__version__ = '0.7.1rc1'
 __author__ = 'Camille Lavayssière'
-
-default_app_config = 'pyscada.webservice.apps.PyScadaWebServiceConfig'
 
 PROTOCOL_ID = 94
 

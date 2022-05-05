@@ -11,7 +11,6 @@ import xml.etree.ElementTree as ET
 from json.decoder import JSONDecodeError
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.db.models.signals import post_save
 
 import logging
@@ -19,7 +18,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class WebServiceDevice(models.Model):
     webservice_device = models.OneToOneField(Device, null=True, blank=True, on_delete=models.CASCADE)
     url = models.URLField(max_length=254)
@@ -38,7 +36,6 @@ class WebServiceDevice(models.Model):
         return self.webservice_device.short_name
 
 
-@python_2_unicode_compatible
 class WebServiceVariable(models.Model):
     webservice_variable = models.OneToOneField(Variable, null=True, blank=True, on_delete=models.CASCADE)
     path = models.CharField(max_length=254, null=True, blank=True,
@@ -50,7 +47,6 @@ class WebServiceVariable(models.Model):
         return self.id.__str__() + "-" + self.webservice_variable.short_name
 
 
-@python_2_unicode_compatible
 class WebServiceAction(models.Model):
     name = models.CharField(max_length=254)
     webservice_mode_choices = ((0, 'Path'), (1, 'GET'), (2, 'POST'),)
