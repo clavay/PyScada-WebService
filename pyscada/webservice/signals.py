@@ -7,7 +7,6 @@ from pyscada.webservice.models import WebServiceDevice, WebServiceVariable, Exte
 
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,8 +26,10 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
     elif type(instance) is WebServiceVariable:
         post_save.send_robust(sender=Variable, instance=instance.webservice_variable)
     elif type(instance) is WebServiceAction:
-        # TODO : select only devices of selected variables
-        pass
+        for var in instance.variables.all():
+            post_save.send_robust(sender=Variable, instance=var)
+        for vp in instance.variable_properties.all():
+            post_save.send_robust(sender=Variable, instance=vp)
     elif type(instance) is ExtendedWebServiceVariable:
         post_save.send_robust(sender=Variable, instance=Variable.objects.get(pk=instance.pk))
     elif type(instance) is ExtendedWebServiceDevice:

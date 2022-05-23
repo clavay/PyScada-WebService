@@ -8,7 +8,7 @@ from pyscada.webservice.models import WebServiceAction
 from pyscada.admin import DeviceAdmin
 from pyscada.admin import VariableAdmin
 from pyscada.admin import admin_site
-from pyscada.models import Device, DeviceProtocol
+from pyscada.models import Device, DeviceProtocol, Variable, VariableProperty
 from django.contrib import admin
 import logging
 
@@ -70,6 +70,13 @@ class WebServiceActionAdmin(admin.ModelAdmin):
     filter_horizontal = ('variables', 'variable_properties',)
     save_as = True
     save_as_continue = True
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == 'variables':
+            kwargs['queryset'] = Variable.objects.filter(device__protocol_id=PROTOCOL_ID)
+        elif db_field.name == 'variable_properties':
+            kwargs['queryset'] = VariableProperty.objects.filter(variable__device__protocol_id=PROTOCOL_ID)
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
 # admin_site.register(ExtendedWebServiceDevice, WebServiceDeviceAdmin)
