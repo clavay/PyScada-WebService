@@ -8,6 +8,7 @@ from pyscada.webservice import PROTOCOL_ID
 from django.db.models import Q
 
 from time import time
+import sys
 
 import logging
 
@@ -94,8 +95,8 @@ class Device:
             for item_pk in res:
                 item = self.variables[item_pk]['object']
                 for (value, time) in res[item_pk]:
-                        if value is not None and item.update_value(value, time):
-                            output.append(item.create_recorded_data_element())
+                    if value is not None and item.update_value(value, time):
+                        output.append(item.create_recorded_data_element())
         self._h.after_read()
         return output
 
@@ -139,7 +140,7 @@ class Device:
                     timestamp = time()
                     if self.webservices[item]['variables'][var]['value'] is not None \
                             and self.webservices[item]['variables'][var]['object'].\
-                            update_value(float(self.webservices[item]['variables'][var]['value']), timestamp):
+                            update_value(self.webservices[item]['variables'][var]['value'], timestamp):
                         output.append(self.webservices[item]['variables'][var]['object'].create_recorded_data_element())
                 except ValueError:
                     logger.debug(str(var) + " - value is : " + str(self.webservices[item]['variables'][var]['value']))
