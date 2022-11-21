@@ -165,7 +165,7 @@ class WebServiceAction(models.Model):
 
     def save(self, *args, **kwargs):
         # TODO : select only devices of selected variables
-        post_save.send_robust(sender=WebServiceAction, instance=WebServiceDevice.objects.first())
+        # post_save.send_robust(sender=WebServiceAction, instance=WebServiceDevice.objects.first())
         super(WebServiceAction, self).save(*args, **kwargs)
 
 

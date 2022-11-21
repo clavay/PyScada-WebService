@@ -49,11 +49,11 @@ class GenericDevice:
         """
         return None
 
-    def read_data_and_time(self, variable_instance):
+    def read_data_and_time(self, ws_action_id, device):
         """
         read values and timestamps from the device
         """
-        return self.read_data(variable_instance), self.time()
+        return self.read_data(ws_action_id), self.time()
 
     def write_data(self, variable_id, value, task):
         """
