@@ -44,7 +44,7 @@ class WebServiceVariable(models.Model):
     protocol_id = PROTOCOL_ID
 
     def __str__(self):
-        return self.id.__str__() + "-" + self.webservice_variable.short_name
+        return self.id.__str__() + "-" + self.webservice_variable.name
 
 
 class WebServiceAction(models.Model):
