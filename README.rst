@@ -19,7 +19,7 @@ What is not Working/Missing
 Installation
 ------------
 
- - pip install https://github.com/clavay/PyScada-WebService/tarball/master
+ - pip install https://github.com/pyscada/PyScada-WebService/tarball/master
 
 
 How to
@@ -44,12 +44,12 @@ How to
 Contribute
 ----------
 
- - Issue Tracker: https://github.com/trombastic/PyScada-WebService/issues
- - Source Code: https://github.com/trombastic/PyScada-WebService
+ - Issue Tracker: https://github.com/pyscada/PyScada-WebService/issues
+ - Source Code: https://github.com/pyscada/PyScada-WebService
  
 
 License
 -------
 
-The project is licensed under the _GNU General Public License v3 (GPLv3)_.
+The project is licensed under the _GNU AFFERO GENERAL PUBLIC LICENSE Version 3 (AGPLv3)_.
 -
