@@ -2,8 +2,10 @@
 from __future__ import unicode_literals
 from pyscada.utils.scheduler import SingleDeviceDAQProcess
 from pyscada.models import DeviceWriteTask, DeviceReadTask
+from pyscada.device import GenericDevice
 from .models import WebServiceAction
-from pyscada.webservice import PROTOCOL_ID
+from . import PROTOCOL_ID
+from .devices import GenericDevice as GenericHandlerDevice
 
 from django.db.models import Q
 
@@ -13,18 +15,23 @@ import sys
 import logging
 
 logger = logging.getLogger(__name__)
-_debug = 1
+driver_ok = True
 
 
-class Device:
+class Device(GenericDevice):
     """
     WebService device
     """
 
     def __init__(self, device):
-        self.variables = {}
+        self.driver_ok = driver_ok
+        self.handler_class = GenericHandlerDevice
+        super().__init__(device)
         self.webservices = {}
-        self.device = device
+
+        if not self.driver_handler_ok:
+            logger.warning(f'Cannot import handler for {self.device}')
+
         for var in self.device.variable_set.filter(active=1):
             if not hasattr(var, 'webservicevariable'):
                 continue
@@ -64,90 +71,15 @@ class Device:
                     self.webservices[ws.pk]['variable_properties'][vp.pk]['proxy'] = vp.variable.device.webservicedevice.http_proxy
                     self.webservices[ws.pk]['variable_properties'][vp.pk]['variable_path'] = vp.variable.webservicevariable.path
 
+        self._h.set_webservices(self.webservices)
+
     def request_data(self):
-        if self.device.webservicedevice.web_service_handler is None:
-            return self._request_data()
-        elif self.device.webservicedevice.web_service_handler.handler_path is not None:
-            sys.path.append(self.device.webservicedevice.web_service_handler.handler_path)
-
-        try:
-            mod = __import__(self.device.webservicedevice.web_service_handler.handler_class, fromlist=['Handler'])
-            device_handler = getattr(mod, 'Handler')
-            self._h = device_handler(self.device, self.variables, self.webservices)
-            self.driver_handler_ok = True
-        except ImportError:
-            self.driver_handler_ok = False
-            logger.error("Handler import error : %s" % self.device.short_name)
-            return None
-
-        if self.driver_handler_ok:
-            return self._request_data_handler()
-
-    def _request_data_handler(self):
-        """
-        request data from the instrument/device
-        """
         output = []
 
-        self._h.before_read()
-        for wsa_id in self.webservices:
-            res = self._h.read_data_and_time(wsa_id, self)
-            for item_pk in res:
-                item = self.variables[item_pk]['object']
-                for (value, time) in res[item_pk]:
-                    if value is not None and item.update_value(value, time):
-                        output.append(item.create_recorded_data_element())
-        self._h.after_read()
-        return output
+        if not self.driver_ok or not self.driver_handler_ok:
+            return output
 
-    def _request_data(self):
-
-        output = []
-
-        for item in self.webservices:
-            # value = None
-            res = self.webservices[item]['object'].request_data(self)
-            for var in self.webservices[item]['variables']:
-                path = self.webservices[item]['variables'][var]['device_path'] + self.webservices[item]['object'].path
-                if self.webservices[item]['variables'][var]['value'] is not None and\
-                        self.webservices[item]['object'].webservice_RW:
-                    logger.warning("Variable " + str(var) + " is in more than one WebService")
-                try:
-                    if "text/xml" in res[path]["content_type"] or \
-                            self.webservices[item]['object'].webservice_content_type == 1:
-                        self.webservices[item]['variables'][var]['value'] = \
-                            res[path]["result"].find(self.webservices[item]['variables'][var]['variable_path']).text
-                    elif "application/json" in res[path]["content_type"] or \
-                            self.webservices[item]['object'].webservice_content_type == 2:
-                        tmp = res[path]["result"]
-                        for key in self.webservices[item]['variables'][var]['variable_path'].split():
-                            tmp = tmp.get(key, {})
-                        self.webservices[item]['variables'][var]['value'] = tmp
-                except KeyError:
-                    logger.error("content_type missing in " + str(path) + " : " + str(res[path]))
-                    self.webservices[item]['variables'][var]['value'] = None
-                except TypeError:
-                    self.webservices[item]['variables'][var]['value'] = None
-                except AttributeError:
-                    logger.error(str(path) + " : " + str(self.webservices[item]['variables'][var]['variable_path']) +
-                                 " not found in " + str(res[path]["result"]))
-                    self.webservices[item]['variables'][var]['value'] = None
-                except SyntaxError:
-                    logger.error(str(path) + " : " + str(self.webservices[item]['variables'][var]['variable_path']) +
-                                 " : XPath syntax error ")
-                    self.webservices[item]['variables'][var]['value'] = None
-                try:
-                    timestamp = time()
-                    if self.webservices[item]['variables'][var]['value'] is not None \
-                            and self.webservices[item]['variables'][var]['object'].\
-                            update_value(self.webservices[item]['variables'][var]['value'], timestamp):
-                        output.append(self.webservices[item]['variables'][var]['object'].create_recorded_data_element())
-                except ValueError:
-                    logger.debug(str(var) + " - value is : " + str(self.webservices[item]['variables'][var]['value']))
-                    pass
-                except TypeError:
-                    logger.debug(str(var) + " - value is : " + str(self.webservices[item]['variables'][var]['value']))
-                    pass
+        output = self._h.read_data_all(self.variables)
 
         return output
 
