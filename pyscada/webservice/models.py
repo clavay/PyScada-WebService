@@ -7,7 +7,7 @@ from . import PROTOCOL_ID
 
 import requests
 
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 from json.decoder import JSONDecodeError
 
 from django.db import models

@@ -32,6 +32,7 @@ setup(
     classifiers=CLASSIFIERS,
     install_requires=[
         'pyscada>=0.8.0',
+        'defusedxml',
     ],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,
