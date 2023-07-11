@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webservice', '0017_auto_20211203_2025'),
+        ("webservice", "0017_auto_20211203_2025"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='webserviceaction',
-            name='payload',
-            field=models.CharField(blank=True, help_text="For exemple: {'type': 'consumption_load_curve', 'usage_point_id': 'ID',}", max_length=400, null=True),
+            model_name="webserviceaction",
+            name="payload",
+            field=models.CharField(
+                blank=True,
+                help_text="For exemple: {'type': 'consumption_load_curve', 'usage_point_id': 'ID',}",
+                max_length=400,
+                null=True,
+            ),
         ),
     ]

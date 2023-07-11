@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webservice', '0012_auto_20200910_0706'),
+        ("webservice", "0012_auto_20200910_0706"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='webservicedevice',
-            name='http_proxy',
+            model_name="webservicedevice",
+            name="http_proxy",
             field=models.CharField(blank=True, max_length=254, null=True),
         ),
     ]

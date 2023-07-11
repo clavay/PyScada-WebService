@@ -12,15 +12,20 @@ def forwards_func(apps, schema_editor):
     DeviceProtocol = apps.get_model("pyscada", "DeviceProtocol")
     db_alias = schema_editor.connection.alias
     if not DeviceProtocol.objects.using(db_alias).filter(pk=PROTOCOL_ID):
-        DeviceProtocol.objects.using(db_alias).bulk_create([
-            DeviceProtocol(pk=PROTOCOL_ID,
-                           protocol='webservice',
-                           description='WebService Interface',
-                           app_name='pyscada.webservice',
-                           device_class='pyscada.webservice.device',
-                           daq_daemon=True,
-                           single_thread=True),
-        ])
+        DeviceProtocol.objects.using(db_alias).bulk_create(
+            [
+                DeviceProtocol(
+                    pk=PROTOCOL_ID,
+                    protocol="webservice",
+                    description="WebService Interface",
+                    app_name="pyscada.webservice",
+                    device_class="pyscada.webservice.device",
+                    daq_daemon=True,
+                    single_thread=True,
+                ),
+            ]
+        )
+
 
 def reverse_func(apps, schema_editor):
     # forwards_func() creates two Country instances,
@@ -32,8 +37,8 @@ def reverse_func(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('webservice', '0002_auto_20200902_0940'),
-        ('pyscada', '0059_auto_20200211_1049'),
+        ("webservice", "0002_auto_20200902_0940"),
+        ("pyscada", "0059_auto_20200211_1049"),
     ]
 
     operations = [

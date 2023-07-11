@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webservice', '0015_auto_20201209_1133'),
+        ("webservice", "0015_auto_20201209_1133"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='webservicedevice',
-            old_name='ip_or_dns',
-            new_name='url',
+            model_name="webservicedevice",
+            old_name="ip_or_dns",
+            new_name="url",
         ),
     ]

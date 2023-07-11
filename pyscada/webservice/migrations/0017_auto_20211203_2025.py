@@ -5,26 +5,36 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0095_auto_20211203_1949'),
-        ('webservice', '0016_auto_20201209_1133'),
+        ("pyscada", "0095_auto_20211203_1949"),
+        ("webservice", "0016_auto_20201209_1133"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='webserviceaction',
-            name='headers',
-            field=models.CharField(blank=True, help_text="For exemple: {'Authorization': 'TOKEN', 'Content-Type': 'application/json',}", max_length=400, null=True),
+            model_name="webserviceaction",
+            name="headers",
+            field=models.CharField(
+                blank=True,
+                help_text="For exemple: {'Authorization': 'TOKEN', 'Content-Type': 'application/json',}",
+                max_length=400,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='webserviceaction',
-            name='variable_properties',
-            field=models.ManyToManyField(related_name='ws_variable_properties', to='pyscada.VariableProperty'),
+            model_name="webserviceaction",
+            name="variable_properties",
+            field=models.ManyToManyField(
+                related_name="ws_variable_properties", to="pyscada.VariableProperty"
+            ),
         ),
         migrations.AddField(
-            model_name='webservicedevice',
-            name='web_service_handler',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.DeviceHandler'),
+            model_name="webservicedevice",
+            name="web_service_handler",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.DeviceHandler",
+            ),
         ),
     ]

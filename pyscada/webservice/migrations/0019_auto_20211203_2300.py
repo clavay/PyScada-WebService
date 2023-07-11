@@ -4,20 +4,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webservice', '0018_webserviceaction_payload'),
+        ("webservice", "0018_webserviceaction_payload"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='webserviceaction',
-            name='variable_properties',
-            field=models.ManyToManyField(blank=True, related_name='ws_variable_properties', to='pyscada.VariableProperty'),
+            model_name="webserviceaction",
+            name="variable_properties",
+            field=models.ManyToManyField(
+                blank=True,
+                related_name="ws_variable_properties",
+                to="pyscada.VariableProperty",
+            ),
         ),
         migrations.AlterField(
-            model_name='webserviceaction',
-            name='variables',
-            field=models.ManyToManyField(blank=True, related_name='ws_variables', to='pyscada.Variable'),
+            model_name="webserviceaction",
+            name="variables",
+            field=models.ManyToManyField(
+                blank=True, related_name="ws_variables", to="pyscada.Variable"
+            ),
         ),
     ]

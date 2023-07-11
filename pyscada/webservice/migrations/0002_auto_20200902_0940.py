@@ -4,24 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webservice', '0001_initial'),
+        ("webservice", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='webserviceaction',
-            name='variables',
+            model_name="webserviceaction",
+            name="variables",
         ),
         migrations.AddField(
-            model_name='webserviceaction',
-            name='webservice_variables',
-            field=models.ManyToManyField(to='webservice.WebServiceVariable'),
+            model_name="webserviceaction",
+            name="webservice_variables",
+            field=models.ManyToManyField(to="webservice.WebServiceVariable"),
         ),
         migrations.AlterField(
-            model_name='webserviceaction',
-            name='path',
+            model_name="webserviceaction",
+            name="path",
             field=models.CharField(blank=True, max_length=400, null=True),
         ),
     ]

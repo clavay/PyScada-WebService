@@ -5,20 +5,26 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webservice', '0010_auto_20200907_0958'),
+        ("webservice", "0010_auto_20200907_0958"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='webserviceaction',
-            name='variables',
-            field=models.ManyToManyField(related_name='ws_variables', to='pyscada.Variable'),
+            model_name="webserviceaction",
+            name="variables",
+            field=models.ManyToManyField(
+                related_name="ws_variables", to="pyscada.Variable"
+            ),
         ),
         migrations.AlterField(
-            model_name='webserviceaction',
-            name='write_trigger',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='ws_write_trigger', to='pyscada.Variable'),
+            model_name="webserviceaction",
+            name="write_trigger",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="ws_write_trigger",
+                to="pyscada.Variable",
+            ),
         ),
     ]

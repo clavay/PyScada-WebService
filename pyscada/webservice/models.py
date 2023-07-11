@@ -19,10 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 class WebServiceDevice(models.Model):
-    webservice_device = models.OneToOneField(Device, null=True, blank=True, on_delete=models.CASCADE)
+    webservice_device = models.OneToOneField(
+        Device, null=True, blank=True, on_delete=models.CASCADE
+    )
     url = models.URLField(max_length=254)
     http_proxy = models.CharField(max_length=254, null=True, blank=True)
-    web_service_handler = models.ForeignKey(DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL)
+    web_service_handler = models.ForeignKey(
+        DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL
+    )
 
     protocol_id = PROTOCOL_ID
 
@@ -37,9 +41,12 @@ class WebServiceDevice(models.Model):
 
 
 class WebServiceVariable(models.Model):
-    webservice_variable = models.OneToOneField(Variable, null=True, blank=True, on_delete=models.CASCADE)
-    path = models.CharField(max_length=254, null=True, blank=True,
-                            help_text="look at the readme")
+    webservice_variable = models.OneToOneField(
+        Variable, null=True, blank=True, on_delete=models.CASCADE
+    )
+    path = models.CharField(
+        max_length=254, null=True, blank=True, help_text="look at the readme"
+    )
 
     protocol_id = PROTOCOL_ID
 
@@ -49,19 +56,57 @@ class WebServiceVariable(models.Model):
 
 class WebServiceAction(models.Model):
     name = models.CharField(max_length=254)
-    webservice_mode_choices = ((0, 'Path'), (1, 'GET'), (2, 'POST'),)
-    webservice_mode = models.PositiveSmallIntegerField(default=0, choices=webservice_mode_choices)
-    webservice_content_type_choices = ((0, 'Auto'), (1, 'XML'), (2, 'JSON'),)
-    webservice_content_type = models.PositiveSmallIntegerField(default=0, choices=webservice_content_type_choices)
-    webservice_RW_choices = ((0, 'Read'), (1, 'Write'),)
-    webservice_RW = models.PositiveSmallIntegerField(default=0, choices=webservice_RW_choices)
-    write_trigger = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.CASCADE,
-                                      related_name="ws_write_trigger")
-    path = models.CharField(max_length=400, null=True, blank=True, help_text="look at the readme")
-    headers = models.CharField(max_length=400, null=True, blank=True, help_text="For exemple: {'Authorization': 'TOKEN', 'Content-Type': 'application/json',}")
-    payload = models.CharField(max_length=400, null=True, blank=True, help_text="For exemple: {'type': 'consumption_load_curve', 'usage_point_id': 'ID',}")
-    variables = models.ManyToManyField(Variable, blank=True, related_name="ws_variables")
-    variable_properties = models.ManyToManyField(VariableProperty, blank=True, related_name="ws_variable_properties")
+    webservice_mode_choices = (
+        (0, "Path"),
+        (1, "GET"),
+        (2, "POST"),
+    )
+    webservice_mode = models.PositiveSmallIntegerField(
+        default=0, choices=webservice_mode_choices
+    )
+    webservice_content_type_choices = (
+        (0, "Auto"),
+        (1, "XML"),
+        (2, "JSON"),
+    )
+    webservice_content_type = models.PositiveSmallIntegerField(
+        default=0, choices=webservice_content_type_choices
+    )
+    webservice_RW_choices = (
+        (0, "Read"),
+        (1, "Write"),
+    )
+    webservice_RW = models.PositiveSmallIntegerField(
+        default=0, choices=webservice_RW_choices
+    )
+    write_trigger = models.ForeignKey(
+        Variable,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="ws_write_trigger",
+    )
+    path = models.CharField(
+        max_length=400, null=True, blank=True, help_text="look at the readme"
+    )
+    headers = models.CharField(
+        max_length=400,
+        null=True,
+        blank=True,
+        help_text="For exemple: {'Authorization': 'TOKEN', 'Content-Type': 'application/json',}",
+    )
+    payload = models.CharField(
+        max_length=400,
+        null=True,
+        blank=True,
+        help_text="For exemple: {'type': 'consumption_load_curve', 'usage_point_id': 'ID',}",
+    )
+    variables = models.ManyToManyField(
+        Variable, blank=True, related_name="ws_variables"
+    )
+    variable_properties = models.ManyToManyField(
+        VariableProperty, blank=True, related_name="ws_variable_properties"
+    )
     active = models.BooleanField(default=True)
 
     timeout = 10
@@ -72,30 +117,40 @@ class WebServiceAction(models.Model):
         return self.name
 
     def request_data(self, device):
-        variables=device.webservices[self.pk]['variables']
-        variable_properties=device.webservices[self.pk]['variable_properties']
+        variables = device.webservices[self.pk]["variables"]
+        variable_properties = device.webservices[self.pk]["variable_properties"]
         paths = {}
         out = {}
         for var_id in variables:
             try:
                 if self.path is None:
-                    self.path = ''
-                paths[variables[var_id]['device_path'] + self.path][var_id] = variables[var_id]['variable_path']
-                paths[variables[var_id]['device_path'] + self.path]['proxy'] = variables[var_id]['proxy']
+                    self.path = ""
+                paths[variables[var_id]["device_path"] + self.path][var_id] = variables[
+                    var_id
+                ]["variable_path"]
+                paths[variables[var_id]["device_path"] + self.path][
+                    "proxy"
+                ] = variables[var_id]["proxy"]
             except KeyError as e:
-                paths[variables[var_id]['device_path'] + self.path] = {}
-                paths[variables[var_id]['device_path'] + self.path][var_id] = variables[var_id]['variable_path']
-                paths[variables[var_id]['device_path'] + self.path]['proxy'] = variables[var_id]['proxy']
+                paths[variables[var_id]["device_path"] + self.path] = {}
+                paths[variables[var_id]["device_path"] + self.path][var_id] = variables[
+                    var_id
+                ]["variable_path"]
+                paths[variables[var_id]["device_path"] + self.path][
+                    "proxy"
+                ] = variables[var_id]["proxy"]
         for ws_path in paths:
             out[ws_path] = {}
             try:
-                if paths[ws_path]['proxy'] is not None:
+                if paths[ws_path]["proxy"] is not None:
                     proxy_dict = {
-                        "http": paths[ws_path]['proxy'],
-                        "https": paths[ws_path]['proxy'],
-                        "ftp": paths[ws_path]['proxy']
+                        "http": paths[ws_path]["proxy"],
+                        "https": paths[ws_path]["proxy"],
+                        "ftp": paths[ws_path]["proxy"],
                     }
-                    res = requests.get(ws_path, proxies=proxy_dict, timeout=self.timeout)
+                    res = requests.get(
+                        ws_path, proxies=proxy_dict, timeout=self.timeout
+                    )
                 else:
                     res = requests.get(ws_path, timeout=self.timeout)
                 self.log_error_1_count = 0
@@ -108,22 +163,32 @@ class WebServiceAction(models.Model):
                 self.log_error_1_count += 1
                 pass
             if res is not None and res.status_code == 200:
-                out[ws_path]["content_type"] = res.headers['Content-type']
+                out[ws_path]["content_type"] = res.headers["Content-type"]
                 out[ws_path]["ws_path"] = ws_path
-                if "text/xml" in out[ws_path]["content_type"] or self.webservice_content_type == 1:
+                if (
+                    "text/xml" in out[ws_path]["content_type"]
+                    or self.webservice_content_type == 1
+                ):
                     out[ws_path]["result"] = ET.fromstring(res.text)
-                elif "application/json" in out[ws_path]["content_type"] or self.webservice_content_type == 2:
+                elif (
+                    "application/json" in out[ws_path]["content_type"]
+                    or self.webservice_content_type == 2
+                ):
                     try:
                         out[ws_path]["result"] = res.json()
                         self.log_error_2_count = 0
                     except JSONDecodeError:
                         if not self.log_error_2_count:
-                            logger.debug(str(ws_path) + " - JSONDecodeError : " + str(res.text))
+                            logger.debug(
+                                str(ws_path) + " - JSONDecodeError : " + str(res.text)
+                            )
                         self.log_error_2_count += 1
                         out[ws_path]["content_type"] = None
             elif res is not None:
                 if not self.log_error_2_count:
-                    logger.debug(str(ws_path) + " - status code = " + str(res.status_code))
+                    logger.debug(
+                        str(ws_path) + " - status code = " + str(res.status_code)
+                    )
                 self.log_error_2_count += 1
             else:
                 if not self.log_error_2_count:
@@ -140,8 +205,11 @@ class WebServiceAction(models.Model):
             if device is None:
                 device = var.device
             elif device != var.device:
-                logger.warning("WebService Write action with id " + str(self.id) +
-                               " have variables with different devices")
+                logger.warning(
+                    "WebService Write action with id "
+                    + str(self.id)
+                    + " have variables with different devices"
+                )
             if var.query_prev_value():
                 if var.scaling is not None:
                     var.prev_value = var.scaling.scale_output_value(var.prev_value)
@@ -172,15 +240,15 @@ class WebServiceAction(models.Model):
 class ExtendedWebServiceDevice(Device):
     class Meta:
         proxy = True
-        verbose_name = 'WebService Device'
-        verbose_name_plural = 'WebService Devices'
+        verbose_name = "WebService Device"
+        verbose_name_plural = "WebService Devices"
 
 
 class ExtendedWebServiceVariable(Variable):
     class Meta:
         proxy = True
-        verbose_name = 'WebService Variable'
-        verbose_name_plural = 'WebService Variables'
+        verbose_name = "WebService Variable"
+        verbose_name_plural = "WebService Variables"
 
     def path(self):
         return self.webservicevariable.path

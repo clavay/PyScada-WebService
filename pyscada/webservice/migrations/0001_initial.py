@@ -5,63 +5,105 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('pyscada', '0059_auto_20200211_1049'),
+        ("pyscada", "0059_auto_20200211_1049"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ExtendedWebServiceDevice',
-            fields=[
-            ],
+            name="ExtendedWebServiceDevice",
+            fields=[],
             options={
-                'verbose_name': 'WebService Device',
-                'verbose_name_plural': 'WebService Devices',
-                'proxy': True,
-                'indexes': [],
-                'constraints': [],
+                "verbose_name": "WebService Device",
+                "verbose_name_plural": "WebService Devices",
+                "proxy": True,
+                "indexes": [],
+                "constraints": [],
             },
-            bases=('pyscada.device',),
+            bases=("pyscada.device",),
         ),
         migrations.CreateModel(
-            name='ExtendedWebServiceVariable',
-            fields=[
-            ],
+            name="ExtendedWebServiceVariable",
+            fields=[],
             options={
-                'verbose_name': 'WebService Variable',
-                'verbose_name_plural': 'WebService Variables',
-                'proxy': True,
-                'indexes': [],
-                'constraints': [],
+                "verbose_name": "WebService Variable",
+                "verbose_name_plural": "WebService Variables",
+                "proxy": True,
+                "indexes": [],
+                "constraints": [],
             },
-            bases=('pyscada.variable',),
+            bases=("pyscada.variable",),
         ),
         migrations.CreateModel(
-            name='WebServiceVariable',
+            name="WebServiceVariable",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('webservice_variable', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "webservice_variable",
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.Variable",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='WebServiceDevice',
+            name="WebServiceDevice",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ip_or_dns', models.CharField(max_length=254)),
-                ('webservice_device', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.Device')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("ip_or_dns", models.CharField(max_length=254)),
+                (
+                    "webservice_device",
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.Device",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='WebServiceAction',
+            name="WebServiceAction",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=254)),
-                ('webservice_mode', models.CharField(choices=[(0, 'Path'), (1, 'GET'), (2, 'POST')], max_length=254)),
-                ('path', models.CharField(max_length=400)),
-                ('variables', models.ManyToManyField(to='pyscada.Variable')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=254)),
+                (
+                    "webservice_mode",
+                    models.CharField(
+                        choices=[(0, "Path"), (1, "GET"), (2, "POST")], max_length=254
+                    ),
+                ),
+                ("path", models.CharField(max_length=400)),
+                ("variables", models.ManyToManyField(to="pyscada.Variable")),
             ],
         ),
     ]

@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0059_auto_20200211_1049'),
-        ('webservice', '0003_add_device_protocol'),
+        ("pyscada", "0059_auto_20200211_1049"),
+        ("webservice", "0003_add_device_protocol"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='webserviceaction',
-            name='webservice_variables',
+            model_name="webserviceaction",
+            name="webservice_variables",
         ),
         migrations.AddField(
-            model_name='webserviceaction',
-            name='variables',
-            field=models.ManyToManyField(to='pyscada.Variable'),
+            model_name="webserviceaction",
+            name="variables",
+            field=models.ManyToManyField(to="pyscada.Variable"),
         ),
     ]

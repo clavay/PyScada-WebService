@@ -2,8 +2,13 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Device, Variable
-from pyscada.webservice.models import WebServiceDevice, WebServiceVariable, ExtendedWebServiceVariable, \
-    ExtendedWebServiceDevice, WebServiceAction
+from pyscada.webservice.models import (
+    WebServiceDevice,
+    WebServiceVariable,
+    ExtendedWebServiceVariable,
+    ExtendedWebServiceDevice,
+    WebServiceAction,
+)
 
 from django.dispatch import receiver
 from django.db.models.signals import post_save
@@ -35,8 +40,15 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
             try:
                 post_save.send_robust(sender=Device, instance=d)
             except AttributeError:
-                logger.debug('Sending signal from WebServiceAction failed for %s : not a WebService Device' % d)
+                logger.debug(
+                    "Sending signal from WebServiceAction failed for %s : not a WebService Device"
+                    % d
+                )
     elif type(instance) is ExtendedWebServiceVariable:
-        post_save.send_robust(sender=Variable, instance=Variable.objects.get(pk=instance.pk))
+        post_save.send_robust(
+            sender=Variable, instance=Variable.objects.get(pk=instance.pk)
+        )
     elif type(instance) is ExtendedWebServiceDevice:
-        post_save.send_robust(sender=Device, instance=Device.objects.get(pk=instance.pk))
+        post_save.send_robust(
+            sender=Device, instance=Device.objects.get(pk=instance.pk)
+        )

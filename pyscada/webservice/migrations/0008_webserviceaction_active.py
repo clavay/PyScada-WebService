@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webservice', '0007_auto_20200903_1340'),
+        ("webservice", "0007_auto_20200903_1340"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='webserviceaction',
-            name='active',
+            model_name="webserviceaction",
+            name="active",
             field=models.BooleanField(default=True),
         ),
     ]

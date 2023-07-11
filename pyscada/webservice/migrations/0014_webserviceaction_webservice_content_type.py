@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webservice', '0013_webservicedevice_http_proxy'),
+        ("webservice", "0013_webservicedevice_http_proxy"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='webserviceaction',
-            name='webservice_content_type',
-            field=models.PositiveSmallIntegerField(choices=[(0, 'Auto'), (1, 'XML'), (2, 'JSON')], default=0),
+            model_name="webserviceaction",
+            name="webservice_content_type",
+            field=models.PositiveSmallIntegerField(
+                choices=[(0, "Auto"), (1, "XML"), (2, "JSON")], default=0
+            ),
         ),
     ]

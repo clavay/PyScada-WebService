@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webservice', '0014_webserviceaction_webservice_content_type'),
+        ("webservice", "0014_webserviceaction_webservice_content_type"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='webservicedevice',
-            name='ip_or_dns',
+            model_name="webservicedevice",
+            name="ip_or_dns",
             field=models.URLField(max_length=254),
         ),
     ]
