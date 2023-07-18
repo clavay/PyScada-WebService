@@ -33,6 +33,7 @@ setup(
     install_requires=[
         "pyscada>=0.8.0",
         "defusedxml",
+        "requests",
     ],
     packages=find_namespace_packages(exclude=["project", "project.*"]),
     include_package_data=True,
