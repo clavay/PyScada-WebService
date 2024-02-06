@@ -24,8 +24,47 @@ class WebServiceDevice(models.Model):
     )
     url = models.URLField(max_length=254)
     http_proxy = models.CharField(max_length=254, null=True, blank=True)
-    web_service_handler = models.ForeignKey(
-        DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL
+    webservice_mode_choices = (
+        (0, "Path"),
+        (1, "GET"),
+        (2, "POST"),
+    )
+    webservice_mode = models.PositiveSmallIntegerField(
+        default=0, choices=webservice_mode_choices
+    )
+    webservice_content_type_choices = (
+        (0, "Auto"),
+        (1, "XML"),
+        (2, "JSON"),
+    )
+    webservice_content_type = models.PositiveSmallIntegerField(
+        default=0, choices=webservice_content_type_choices
+    )
+    webservice_RW_choices = (
+        (0, "Read"),
+        (1, "Write"),
+    )
+    webservice_RW = models.PositiveSmallIntegerField(
+        default=0, choices=webservice_RW_choices
+    )
+    write_trigger = models.ForeignKey(
+        Variable,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="ws_write_trigger",
+    )
+    headers = models.CharField(
+        max_length=400,
+        null=True,
+        blank=True,
+        help_text="For exemple: {'Authorization': 'TOKEN', 'Content-Type': 'application/json',}",
+    )
+    payload = models.CharField(
+        max_length=400,
+        null=True,
+        blank=True,
+        help_text="For exemple: {'type': 'consumption_load_curve', 'usage_point_id': 'ID',}",
     )
 
     protocol_id = PROTOCOL_ID
@@ -84,7 +123,7 @@ class WebServiceAction(models.Model):
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="ws_write_trigger",
+        related_name="ws_write_triggerAction",
     )
     path = models.CharField(
         max_length=400, null=True, blank=True, help_text="look at the readme"
