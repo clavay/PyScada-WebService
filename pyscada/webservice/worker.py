@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 class Process(SingleDeviceDAQProcessWorker):
     device_filter = dict(webservicedevice__isnull=False, protocol_id=PROTOCOL_ID)
-    process_class = "pyscada.webservice.device.Process"
     bp_label = "pyscada.webservice-%s"
 
     def __init__(self, dt=5, **kwargs):

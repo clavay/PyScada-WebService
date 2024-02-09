@@ -8,6 +8,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 driver_ok = True
+try:
+    import requests
+except ImportError:
+    logger.error("Cannot import requests", exc_info=True)
+    driver_ok = False
+try:
+    import defusedxml.ElementTree as ET
+except ImportError:
+    logger.error("Cannot import defusedxml", exc_info=True)
+    driver_ok = False
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    logger.error("Cannot import json", exc_info=True)
+    driver_ok = False
 
 
 class GenericDevice(GenericHandlerDevice):
@@ -17,123 +32,142 @@ class GenericDevice(GenericHandlerDevice):
         self._protocol = PROTOCOL_ID
         self.last_value = None
         self.webservices = None
+        self.timeout = 10
+        self.log_error_1_count = 0
+        self.log_error_2_count = 0
+        self.result = None
 
-    def set_webservices(self, webservices):
-        self.webservices = webservices
-
-    def read_data(self, item):
+    def read_data(self, variable_instance):
         """
-        read values from the device
+        read values from the query result
         """
-        output = {}
+        value = None
 
-        self.inst = True
+        wv = variable_instance.webservicevariable
+        wd = variable_instance.device.webservicedevice
 
-        res = self.webservices[item]["object"].request_data(self)
-        for var in self.webservices[item]["variables"]:
-            path = (
-                self.webservices[item]["variables"][var]["device_path"]
-                + self.webservices[item]["object"].path
-            )
-            if (
-                self.webservices[item]["variables"][var]["value"] is not None
-                and self.webservices[item]["object"].webservice_RW
-            ):
-                logger.warning(
-                    "Variable " + str(var) + " is in more than one WebService"
+        try:
+            if wv is None:
+                raise ValueError(f"{variable_instance} has no webservice variable. Cannot read data from the webservice request.")
+            if wd.webservice_content_type == 1 or "text/xml" in self.inst.headers["Content-type"]:
+                value = (
+                    self.result.find(variable_instance).text
                 )
-            try:
-                if res[path]["content_type"] is None:
-                    self._not_accessible_reason = "content type is None"
-                    self.inst = None
-                    self.webservices[item]["variables"][var]["value"] = None
-                    break
-                else:
-                    if (
-                        "text/xml" in res[path]["content_type"]
-                        or self.webservices[item]["object"].webservice_content_type == 1
-                    ):
-                        self.webservices[item]["variables"][var]["value"] = (
-                            res[path]["result"]
-                            .find(
-                                self.webservices[item]["variables"][var][
-                                    "variable_path"
-                                ]
-                            )
-                            .text
-                        )
-                    elif (
-                        "application/json" in res[path]["content_type"]
-                        or self.webservices[item]["object"].webservice_content_type == 2
-                    ):
-                        tmp = res[path]["result"]
-                        for key in self.webservices[item]["variables"][var][
-                            "variable_path"
-                        ].split():
+            elif wd.webservice_content_type == 2 or "application/json" in self.inst.headers["Content-type"]:
+                tmp = self.result
+                for key in wv.path.split():
+                    if key.startswith("[") and key.endswith("]"):
+                        try:
+                            i = int(key.split("[")[1].split("]")[0])
+                            tmp = tmp[i]
+                        except (ValueError, IndexError) as e:
                             tmp = tmp.get(key, {})
-                        self.webservices[item]["variables"][var]["value"] = tmp
-            except KeyError:
-                self._not_accessible_reason = (
-                    f"content_type missing in {path} : {res[path]}"
-                )
-                self.inst = None
-                self.webservices[item]["variables"][var]["value"] = None
-                break
-            except TypeError as e:
-                self._not_accessible_reason = e
-                self.inst = None
-                self.webservices[item]["variables"][var]["value"] = None
-                break
-            except AttributeError:
-                self.inst = None
-                self._not_accessible_reason = f"{path} : {self.webservices[item]['variables'][var]['variable_path']} not found in {res[path]['result']}"
-                self.webservices[item]["variables"][var]["value"] = None
-                break
-            except SyntaxError:
-                self.inst = None
-                self._not_accessible_reason = f"{path} : {self.webservices[item]['variables'][var]['variable_path']} : XPath syntax error "
-                self.webservices[item]["variables"][var]["value"] = None
-                break
+                    else:
+                        tmp = tmp.get(key, {})
+                value = tmp
+        except ValueError as e:
+            logger.warning(e)
+        except KeyError:
+            logger.info(f"Device {self._device} - content_type missing in headers response : {self.inst.headers}")
+        except TypeError as e:
+            logger.warning(e)
+        except AttributeError as e:
+            logger.warning(f"Device {self._device} - {wv.path} not found in {self.result} - {e}")
+            if type(tmp) == list:
+                logger.info(f"To search in json list use this syntax for the variable path : key1 key2 [list_index] key3...")
+        except SyntaxError as e:
+            logger.warning(f"Device {self._device} - {wv.path} not found in {self.result} - XPath syntax error - {e}")
 
-            output[var] = (
-                self.webservices[item]["variables"][var]["value"],
-                self.time(),
-            )
+        return value
 
-        return output
+    def connect(self):
 
-    def read_data_and_time(self, ws_action_id):
-        """
-        read values and timestamps from the device
-        """
-        return self.read_data(ws_action_id)  # , self.time()
+        if super().connect() == False:
+            return False
 
-    def read_data_all(self, variables_dict):
-        output = []
+        wd = self._device.webservicedevice
 
-        self.before_read()
-        for wsa_id in self.webservices:
-            res = self.read_data_and_time(wsa_id)
-            self.accessibility()
-            for item_pk in res:
-                item = self._variables[item_pk]["object"]
-                value, time = res[item_pk]
+        try:
+            if wd.http_proxy is not None:
+                proxy_dict = {
+                    "http": wd.http_proxy,
+                    "https": wd.http_proxy,
+                    "ftp": wd.http_proxy,
+                }
+                self.inst = requests.get(wd.url, proxies=proxy_dict, timeout=self.timeout)
+            else:
+                self.inst = requests.get(wd.url, timeout=self.timeout)
+            self.log_error_1_count = 0
+            return True
+        except Exception as e:
+            self.inst = None
+            if not self.log_error_1_count:
+                logger.debug(e)
+            self.log_error_1_count += 1
+        return False
+
+    def before_read(self):
+        if not super().before_read():
+            return False
+        self.accessibility()
+
+        wd = self._device.webservicedevice
+
+        if self.inst is not None and self.inst.status_code == 200:
+            if (
+                "text/xml" in self.inst.headers["Content-type"]
+                or wd.webservice_content_type == 1
+            ):
+                self.result = ET.fromstring(self.inst.text)
+                return True
+            elif (
+                "application/json" in self.inst.headers["Content-type"]
+                or wd.webservice_content_type == 2
+            ):
                 try:
-                    if value is not None and item.update_value(value, time):
-                        output.append(item.create_recorded_data_element())
-                except ValueError:
-                    logger.debug(
-                        str(item)
-                        + " - value is : "
-                        + str(self.webservices[wsa_id]["variables"][item]["value"])
-                    )
-                    pass
-                except TypeError:
-                    logger.debug(
-                        str(item)
-                        + " - value is : "
-                        + str(self.webservices[wsa_id]["variables"][item]["value"])
-                    )
-                    pass
-        self.after_read()
-        return output
+                    self.result = self.inst.json()
+                    self.log_error_2_count = 0
+                    return True
+                except JSONDecodeError:
+                    if not self.log_error_2_count:
+                        logger.debug(f"{wd.url} - JSONDecodeError : {res.text}")
+                    self.log_error_2_count += 1
+        elif self.inst is not None:
+            if not self.log_error_2_count:
+                logger.debug(f"{wd.url} - status code = {res.status_code}")
+            self.log_error_2_count += 1
+        else:
+            if not self.log_error_2_count:
+                logger.debug(f"{wd.url} - get request is None")
+            self.log_error_2_count += 1
+
+        return False
+
+    def after_read(self):
+        self.result = None
+        return super().after_read()
+
+    def write_data(self, variable_id, value, task):
+        wv = variable_instance.webservicevariable
+        wd = variable_instance.device
+        path = wd.url
+        for var in self.variables.all():
+            if var.query_prev_value():
+                if var.scaling is not None:
+                    var.prev_value = var.scaling.scale_output_value(var.prev_value)
+                path = path.replace(f"${var.id}", str(var.prev_value))
+            else:
+                logger.debug(f"Cannot write to device {self._device} because variable {var} has no previous value")
+                return False
+        try:
+            res = requests.get(path, timeout=self.timeout)
+        except:
+            res = None
+        if res is not None and res.status_code == 200:
+            return True
+        else:
+            if res is None:
+                logger.debug(f"Write to device {self._device} failed, response is None")
+            else:
+                logger.debug(f"Write to device {self._device} error, response code is {res.status_code}")
+            return False
