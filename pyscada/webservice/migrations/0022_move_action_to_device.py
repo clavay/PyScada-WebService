@@ -30,9 +30,13 @@ def forwards_func(apps, schema_editor):
             d = None
             for w_v in w_a.variables.all():
                 if d is not None and w_v.device.webservicedevice != d:
-                    logger.info(f"WebServiceAction {w_a} has variable from differents devices. Not moving the action to the device {w_v.device} for variable {w_v}")
+                    logger.info(
+                        f"WebServiceAction {w_a} has variable from differents devices. Not moving the action to the device {w_v.device} for variable {w_v}"
+                    )
                 elif d is not None and w_v.device.webservicedevice == d:
-                    logger.info(f"WebServiceAction {w_a} already moved to the device {w_v.device} for variable {w_v}")
+                    logger.info(
+                        f"WebServiceAction {w_a} already moved to the device {w_v.device} for variable {w_v}"
+                    )
                 elif w_v.device.protocol == protocol:
                     d = w_v.device.webservicedevice
                     d.webservice_mode = w_a.webservice_mode
@@ -43,9 +47,13 @@ def forwards_func(apps, schema_editor):
                     d.payload = w_a.payload
                     d.url += w_a.path
                     d.save()
-                    logger.info(f"WebServiceAction {w_a} moved to the device {w_v.device} for variable {w_v}")
+                    logger.info(
+                        f"WebServiceAction {w_a} moved to the device {w_v.device} for variable {w_v}"
+                    )
                 else:
-                    logger.info(f"Variable {w_v} used in action {w_a} is not from a webservice decide : {w_v.device}. Not moving the action to this device.")
+                    logger.info(
+                        f"Variable {w_v} used in action {w_a} is not from a webservice decide : {w_v.device}. Not moving the action to this device."
+                    )
     except (ProgrammingError, LookupError):
         pass
 
