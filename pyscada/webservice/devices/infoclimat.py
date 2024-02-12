@@ -8,7 +8,7 @@ import os
 from datetime import datetime, date, timedelta
 import requests
 import json
-from pytz import timezone, utc
+from pytz import utc
 
 import logging
 
@@ -116,6 +116,7 @@ class Handler(GenericDevice):
 
         logger.info(f"Starting to read from {t_from.isoformat()}")
         stop = False
+        erase_cache = True
         while not stop:
             t_to = t_from + timedelta(days=6)
             if t_to >= date.today():
@@ -130,8 +131,9 @@ class Handler(GenericDevice):
                 logger.info(
                     f"{wd} from {t_from.isoformat()} to {t_to.isoformat()} iteration {i}"
                 )
-                out = super().read_data_all(variables_dict, erase_cache=False)
+                out = super().read_data_all(variables_dict, erase_cache=erase_cache)
                 if len(out):
+                    erase_cache = False
                     for var in out:
                         if var not in output:
                             logger.info(f"adding {var} to output")
@@ -156,13 +158,7 @@ class Handler(GenericDevice):
                 read_time = i.get("dh_utc", None)
                 if read_time is None:
                     continue
-                read_time = datetime.fromisoformat(read_time)
-                paris = timezone("Europe/Paris")
-                try:
-                    read_time = paris.localize(read_time, is_dst=None).astimezone(utc)
-                except AmbiguousTimeError:
-                    # date time is at the daylight saving time (summer/winter change), not possible to determine, set -1h offset
-                    read_time -= timedelta(seconds=3600)
+                read_time = datetime.fromisoformat(read_time).astimezone(utc)
                 read_time = read_time.timestamp()
                 values.append(value)
                 read_times.append(read_time)
