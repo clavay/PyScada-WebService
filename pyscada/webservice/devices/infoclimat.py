@@ -8,6 +8,7 @@ import os
 from datetime import datetime, date, timedelta
 import requests
 import json
+from pytz import timezone, utc
 
 import logging
 
@@ -96,15 +97,20 @@ class Handler(GenericDevice):
     def read_data_all(self, variables_dict):
         wd = self._device.webservicedevice
         payload = json.loads(wd.payload)
+        logger.info(self._variables)
+        hourly_variables = []
+        for v in self._variables.values():
+            if "hourly" in v.webservicevariable.path:
+                hourly_variables.append(v)
         last_timestamp = Variable.objects.get_last_element_timestamp(
-            variables=self.variables
+            variables=hourly_variables
         )
         logger.info(f"last_timestamp : {last_timestamp}")
-        months_offset_max = 2
+        months_offset_max = 36
         t_from = date.fromtimestamp(
             self._get_min_time(months_offset_max, last_timestamp)
         )
-        payload["start"] = t_from.isoformat()
+        logger.info(f"t_from : {t_from}")
 
         output = []
 
@@ -115,6 +121,7 @@ class Handler(GenericDevice):
             if t_to >= date.today():
                 stop = True
                 t_to = date.today()
+            payload["start"] = t_from.isoformat()
             payload["end"] = t_to.isoformat()
             wd.payload = json.dumps(payload)
 
@@ -123,7 +130,7 @@ class Handler(GenericDevice):
                 logger.info(
                     f"{wd} from {t_from.isoformat()} to {t_to.isoformat()} iteration {i}"
                 )
-                out = super().read_data_all()
+                out = super().read_data_all(variables_dict, erase_cache=False)
                 if len(out):
                     for var in out:
                         if var not in output:
@@ -131,22 +138,32 @@ class Handler(GenericDevice):
                             output.append(var)
                     break
             t_from = t_to
-
         return output
 
     def read_data_and_time(self, variable_instance):
         wv = variable_instance.webservicevariable
+        if self.result is None:
+            return None, None
 
         if wv.path.split()[0] == "hourly":
             values = []
             read_times = []
-            tmp = self.result.get("hourly", {})
+            tmp = self.result
+            tmp = tmp.get(wv.path.split()[0], {})
+            tmp = tmp.get(wv.path.split()[1], {})
             for i in tmp:
                 value = i.get(wv.path.split()[-1], None)
                 read_time = i.get("dh_utc", None)
                 if read_time is None:
                     continue
-                read_time = datetime.fromisoformat(read_time).timestamp()
+                read_time = datetime.fromisoformat(read_time)
+                paris = timezone("Europe/Paris")
+                try:
+                    read_time = paris.localize(read_time, is_dst=None).astimezone(utc)
+                except AmbiguousTimeError:
+                    # date time is at the daylight saving time (summer/winter change), not possible to determine, set -1h offset
+                    read_time -= timedelta(seconds=3600)
+                read_time = read_time.timestamp()
                 values.append(value)
                 read_times.append(read_time)
             logger.info(f"{len(values)}")
@@ -163,104 +180,3 @@ class Handler(GenericDevice):
             ).timestamp()
         logger.info(f"time_min : {time_min}")
         return time_min
-
-    def read_data_allOld(self, variables_dict):
-        output = []
-
-        if self.before_read():
-            variables_values = {}
-            variables_timestamps = {}
-            for wsa_id in self.webservices:
-                headers = self.webservices[wsa_id]["object"].headers
-                token = json.loads(headers).get("token", None)
-                station = json.loads(headers).get("station", None)
-                if station is None or token is None:
-                    logger.warning(f"Need a token and a station : {token} {station}")
-                    continue
-
-                # erase variable cached values
-                variables = []
-                for var_id in self.webservices[wsa_id]["variables"]:
-                    variables_dict[var_id]["object"].update_values(
-                        [], [], erase_cache=True
-                    )
-                    variables.append(variables_dict[var_id]["object"])
-                logger.info(variables)
-                last_timestamp = Variable.objects.get_last_element_timestamp(
-                    variables=variables
-                )
-                logger.info(f"last_timestamp : {last_timestamp}")
-                months_offset_max = 2
-                t_from = date.fromtimestamp(
-                    self._get_min_time(months_offset_max, last_timestamp)
-                )
-                logger.info(f"Starting to read from {t_from}")
-                stop = False
-                while not stop:
-                    t_to = t_from + timedelta(days=6)
-                    if t_to >= date.today():
-                        stop = True
-                        t_to = date.today()
-
-                    for i in range(0, 3):
-                        # try 3 times max
-                        logger.info(
-                            f"ID:{wsa_id} from {t_from} to {t_to} iteration {i}"
-                        )
-                        try:
-                            self.inst.set_params(
-                                station, token, t_from.isoformat(), t_to.isoformat()
-                            )
-                            r = self.inst.send_get()
-                            if r is None:
-                                continue
-                        except TypeError:
-                            pass
-                        except Exception as e:
-                            logger.warning(f"Read failed {i} for {self._device} : {e}")
-                            sleep(2)
-                        else:
-                            for var_id in self.webservices[wsa_id]["variables"]:
-                                values = []
-                                read_times = []
-                                try:
-                                    tmp = r.json()
-                                except requests.exceptions.JSONDecodeError as e:
-                                    logger.warning(
-                                        f"JSON decode error for webservice action {wsa_id} variable {var_id} : {e}"
-                                    )
-                                    continue
-                                hourly_data = False
-                                keys = self.webservices[wsa_id]["variables"][var_id][
-                                    "variable_path"
-                                ]
-                                for key in keys.split():
-                                    tmp = tmp.get(key, {})
-                                    if hourly_data:
-                                        break
-                                    if key == "hourly":
-                                        hourly_data = True
-                                if hourly_data:
-                                    for i in tmp:
-                                        value = i.get(keys.split()[-1], None)
-                                        read_time = i.get("dh_utc", None)
-                                        if read_time is None:
-                                            continue
-                                        read_time = datetime.fromisoformat(
-                                            read_time
-                                        ).timestamp()
-                                        values.append(value)
-                                        read_times.append(read_time)
-                                    logger.info(f"{len(values)}")
-                                if len(values):
-                                    variables_dict[var_id]["object"].update_values(
-                                        values, read_times, erase_cache=False
-                                    )
-
-                        break
-                    t_from = t_to
-                for var_id in self.webservices[wsa_id]["variables"]:
-                    if len(variables_dict[var_id]["object"].cached_values_to_write):
-                        output.append(variables_dict[var_id]["object"])
-                logger.info(len(output))
-            return output
