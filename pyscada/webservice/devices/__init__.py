@@ -52,6 +52,11 @@ class GenericDevice(GenericHandlerDevice):
                 raise ValueError(
                     f"{variable_instance} has no webservice variable. Cannot read data from the webservice request."
                 )
+            if self.inst is None:
+                raise ValueError(
+                    f"{variable_instance.device} not connected. Cannot read data from the webservice request."
+                )
+
             if (
                 wd.webservice_content_type == 1
                 or "text/xml" in self.inst.headers["Content-type"]
