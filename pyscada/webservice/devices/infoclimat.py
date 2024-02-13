@@ -98,12 +98,20 @@ class Handler(GenericDevice):
         wd = self._device.webservicedevice
         payload = json.loads(wd.payload)
         logger.info(self._variables)
-        hourly_variables = []
-        for v in self._variables.values():
-            if "hourly" in v.webservicevariable.path:
-                hourly_variables.append(v)
+        hourly_variables = {}
+        classic_variables = {}
+        for v in self._variables:
+            if "hourly" in self._variables[v].webservicevariable.path:
+                hourly_variables[v] = self._variables[v]
+            else:
+                classic_variables[v] = self._variables[v]
+
+        # read non hourly variables
+        output = super().read_data_all(classic_variables, erase_cache=True)
+
+
         last_timestamp = Variable.objects.get_last_element_timestamp(
-            variables=hourly_variables
+            variables=hourly_variables.values()
         )
         logger.info(f"last_timestamp : {last_timestamp}")
         months_offset_max = 36
@@ -111,12 +119,9 @@ class Handler(GenericDevice):
             self._get_min_time(months_offset_max, last_timestamp)
         )
         logger.info(f"t_from : {t_from}")
-
-        output = []
-
         logger.info(f"Starting to read from {t_from.isoformat()}")
         stop = False
-        erase_cache = True
+
         while not stop:
             t_to = t_from + timedelta(days=6)
             if t_to >= date.today():
@@ -124,16 +129,19 @@ class Handler(GenericDevice):
                 t_to = date.today()
             payload["start"] = t_from.isoformat()
             payload["end"] = t_to.isoformat()
-            wd.payload = json.dumps(payload)
+            try:
+                wd.payload = json.dumps(payload)
+            except json.decoder.JSONDecodeError as e:
+                logger.info(f"Device {self._device} - JSONDecodeError : {e}")
+                break
 
             for i in range(0, 3):
                 # try 3 times max
                 logger.info(
                     f"{wd} from {t_from.isoformat()} to {t_to.isoformat()} iteration {i}"
                 )
-                out = super().read_data_all(variables_dict, erase_cache=erase_cache)
+                out = super().read_data_all(hourly_variables, erase_cache=False)
                 if len(out):
-                    erase_cache = False
                     for var in out:
                         if var not in output:
                             logger.info(f"adding {var} to output")
