@@ -122,7 +122,7 @@ class Handler(GenericDevice):
         logger.info(f"Starting to read from {t_from.isoformat()}")
         stop = False
 
-        while not stop:
+        while not stop and len(hourly_variables):
             t_to = t_from + timedelta(days=6)
             if t_to >= date.today():
                 stop = True
