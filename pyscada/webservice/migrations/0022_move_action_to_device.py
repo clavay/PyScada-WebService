@@ -45,7 +45,7 @@ def forwards_func(apps, schema_editor):
                     d.write_trigger = w_a.write_trigger
                     d.headers = w_a.headers
                     d.payload = w_a.payload
-                    d.url += w_a.path
+                    d.url += w_a.path if w_a.path is not None else ""
                     d.save()
                     logger.info(
                         f"WebServiceAction {w_a} moved to the device {w_v.device} for variable {w_v}"
