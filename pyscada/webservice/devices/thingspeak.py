@@ -51,6 +51,7 @@ class Handler(GenericDevice):
                     logger.info(
                         f"error while reading {read_time} from iso format : {e}"
                     )
+                    continue
                 read_time = read_time.timestamp()
                 values.append(value)
                 read_times.append(read_time)
