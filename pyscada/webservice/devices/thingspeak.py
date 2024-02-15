@@ -42,7 +42,15 @@ class Handler(GenericDevice):
                 read_time = i.get("created_at", None)
                 if read_time is None:
                     continue
-                read_time = datetime.fromisoformat(read_time)
+                try:
+                    read_time = datetime.fromisoformat(read_time)
+                except ValueError:
+                    # for python version < 3.11 (https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat)
+                    read_time = datetime.fromisoformat(read_time.replace("Z", ""))
+                except Exception as e:
+                    logger.info(
+                        f"error while reading {read_time} from iso format : {e}"
+                    )
                 read_time = read_time.timestamp()
                 values.append(value)
                 read_times.append(read_time)

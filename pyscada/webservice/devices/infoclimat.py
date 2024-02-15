@@ -109,7 +109,6 @@ class Handler(GenericDevice):
         # read non hourly variables
         output = super().read_data_all(classic_variables, erase_cache=True)
 
-
         last_timestamp = Variable.objects.get_last_element_timestamp(
             variables=hourly_variables.values()
         )
