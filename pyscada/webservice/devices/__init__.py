@@ -187,10 +187,12 @@ class GenericDevice(GenericHandlerDevice):
         return super().after_read()
 
     def write_data(self, variable_id, value, task):
-        wv = variable_instance.webservicevariable
-        wd = variable_instance.device
+        if task.variable is None:
+            return None
+        wv = task.variable.webservicevariable
+        wd = task.variable.device.webservicedevice
         path = wd.url
-        for var in self.variables.all():
+        for var in self._variables.values():
             if var.query_prev_value():
                 if var.scaling is not None:
                     var.prev_value = var.scaling.scale_output_value(var.prev_value)
