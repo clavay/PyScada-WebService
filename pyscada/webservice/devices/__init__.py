@@ -167,12 +167,12 @@ class GenericDevice(GenericHandlerDevice):
                     return True
                 except JSONDecodeError:
                     if not self.log_error_2_count:
-                        logger.debug(f"{wd.url} - JSONDecodeError : {res.text}")
+                        logger.debug(f"{wd.url} - JSONDecodeError : {self.inst.text}")
                     self.log_error_2_count += 1
         elif self.inst is not None:
             if not self.log_error_2_count:
-                logger.debug(f"{wd.url} - status code = {res.status_code}")
-            logger.debug(f"{wd.url} - status code = {res.status_code}")
+                logger.debug(f"{wd.url} - status code = {self.inst.status_code}")
+            logger.debug(f"{wd.url} - status code = {self.inst.status_code}")
             self.log_error_2_count += 1
         else:
             if not self.log_error_2_count:
