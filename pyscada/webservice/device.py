@@ -42,3 +42,6 @@ class Device(GenericDevice):
         self.driver_ok = driver_ok
         self.handler_class = GenericHandlerDevice
         super().__init__(device)
+
+    def write_data(self, variable_id, value, task):
+        return self._h.write_data(variable_id, value, task)

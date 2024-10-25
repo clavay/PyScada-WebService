@@ -107,7 +107,7 @@ class Handler(GenericDevice):
                 classic_variables[v] = self._variables[v]
 
         # read non hourly variables
-        output = super().read_data_all(classic_variables, erase_cache=True)
+        output = super().read_data_all(classic_variables)
 
         last_timestamp = Variable.objects.get_last_element_timestamp(
             variables=hourly_variables.values()
@@ -139,7 +139,7 @@ class Handler(GenericDevice):
                 logger.info(
                     f"{wd} from {t_from.isoformat()} to {t_to.isoformat()} iteration {i}"
                 )
-                out = super().read_data_all(hourly_variables, erase_cache=False)
+                out = super().read_data_all(hourly_variables)
                 if len(out):
                     for var in out:
                         if var not in output:

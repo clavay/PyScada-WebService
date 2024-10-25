@@ -61,7 +61,8 @@ class GenericDevice(GenericHandlerDevice):
                 wd.webservice_content_type == 1
                 or "text/xml" in self.inst.headers["Content-type"]
             ):
-                value = self.result.find(variable_instance).text
+                tmp = None
+                value = self.result.find(wv.path).text
             elif (
                 wd.webservice_content_type == 2
                 or "application/json" in self.inst.headers["Content-type"]
