@@ -96,7 +96,10 @@ class Handler(GenericDevice):
 
     def read_data_all(self, variables_dict):
         wd = self._device.webservicedevice
-        payload = json.loads(wd.payload)
+        try:
+            payload = json.loads(wd.payload)
+        except (json.decoder.JSONDecodeError, TypeError):
+            payload = {}
         logger.info(self._variables)
         hourly_variables = {}
         classic_variables = {}
