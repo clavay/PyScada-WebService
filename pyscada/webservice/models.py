@@ -32,8 +32,8 @@ class WebServiceDevice(models.Model):
     )
     webservice_content_type_choices = (
         (0, "Auto"),
-        (1, "XML"),
-        (2, "JSON"),
+        (1, "text/xml"),
+        (2, "application/json"),
     )
     webservice_content_type = models.PositiveSmallIntegerField(
         default=0, choices=webservice_content_type_choices

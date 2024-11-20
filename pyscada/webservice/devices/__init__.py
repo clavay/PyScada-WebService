@@ -58,6 +58,10 @@ class GenericDevice(GenericHandlerDevice):
                 )
 
             if (
+                wd.webservice_content_type != 0 and wd.get_webservice_content_type_display() not in self.inst.headers["Content-type"]
+            ):
+                logger.info(f"Cannot read data for {variable_instance}. Content-type is {self.inst.headers['Content-type']} but it should contain {wd.get_webservice_content_type_display()}.")
+            elif (
                 wd.webservice_content_type == 1
                 or "text/xml" in self.inst.headers["Content-type"]
             ):
@@ -78,6 +82,8 @@ class GenericDevice(GenericHandlerDevice):
                     else:
                         tmp = tmp.get(key, {})
                 value = tmp
+            else:
+                logger.info(f"{self._device} Content-type is set to {wd.get_webservice_content_type_display()} and the reponse Content-type is {self.inst.headers['Content-type']}. Default handler cannot read this. Choose an handler to treat this specific case.")
         except ValueError as e:
             logger.warning(e)
         except KeyError:
@@ -140,7 +146,7 @@ class GenericDevice(GenericHandlerDevice):
         except Exception as e:
             self.inst = None
             if not self.log_error_1_count:
-                logger.debug(e)
+                logger.info(e)
             self.log_error_1_count += 1
         return False
 
@@ -153,6 +159,10 @@ class GenericDevice(GenericHandlerDevice):
 
         if self.inst is not None and self.inst.status_code == 200:
             if (
+                wd.webservice_content_type != 0 and wd.get_webservice_content_type_display() not in self.inst.headers["Content-type"]
+            ):
+                logger.info(f"Wrong Content-type for {self._device}. It is {self.inst.headers['Content-type']} but it should contain {wd.get_webservice_content_type_display()}. Response is : {self.inst.text}")
+            elif (
                 "text/xml" in self.inst.headers["Content-type"]
                 or wd.webservice_content_type == 1
             ):
@@ -168,17 +178,21 @@ class GenericDevice(GenericHandlerDevice):
                     return True
                 except JSONDecodeError:
                     if not self.log_error_2_count:
-                        logger.debug(f"{wd.url} - JSONDecodeError : {self.inst.text}")
+                        logger.info(f"{wd.url} - JSONDecodeError : {self.inst.text}")
                     self.log_error_2_count += 1
+            else:
+                logger.info(f"Unknown Content-type for {self._device}. It is {self.inst.headers['Content-type']}. Read result as text : {self.inst.text}")
+                self.result = self.inst.text
+                return True
         elif self.inst is not None:
             if not self.log_error_2_count:
-                logger.debug(f"{wd.url} - status code = {self.inst.status_code}")
-            logger.debug(f"{wd.url} - status code = {self.inst.status_code}")
+                logger.info(f"{wd.url} - status code = {self.inst.status_code}")
+            logger.info(f"{wd.url} - status code = {self.inst.status_code}")
             self.log_error_2_count += 1
         else:
             if not self.log_error_2_count:
-                logger.debug(f"{wd.url} - get request is None")
-            logger.debug(f"{wd.url} - get request is None")
+                logger.info(f"{wd.url} - get request is None")
+            logger.info(f"{wd.url} - get request is None")
             self.log_error_2_count += 1
 
         return False
@@ -199,7 +213,7 @@ class GenericDevice(GenericHandlerDevice):
                     var.prev_value = var.scaling.scale_output_value(var.prev_value)
                 path = path.replace(f"${var.id}", str(var.prev_value))
             else:
-                logger.debug(
+                logger.info(
                     f"Cannot write to device {self._device} because variable {var} has no previous value"
                 )
                 return False
@@ -211,9 +225,9 @@ class GenericDevice(GenericHandlerDevice):
             return True
         else:
             if res is None:
-                logger.debug(f"Write to device {self._device} failed, response is None")
+                logger.info(f"Write to device {self._device} failed, response is None")
             else:
-                logger.debug(
+                logger.info(
                     f"Write to device {self._device} error, response code is {res.status_code}"
                 )
             return False

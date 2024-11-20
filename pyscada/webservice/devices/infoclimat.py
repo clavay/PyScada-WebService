@@ -28,6 +28,16 @@ else:
 """Object based access to infoclimat
 https://www.infoclimat.fr/opendata/?method=get&format=json&stations[]=000PS&start=2024-01-01&end=2024-01-08&token=XXX
 
+# Using the handler
+# 1. Create a webservice device:
+#   - url: https://www.infoclimat.fr/opendata/
+#   - Webservice content type: application/json
+#   - Payload: {"method":"get","format":"json","stations[]":"000PS","token":"XXX"}
+# 2. Create a webservice variable:
+#   - to get the first station name, Path should be: "stations [0] name"
+#   - to get the temperature for 000PS station, Path should be: "hourly 000PS temperature"
+
+# Using the infoclimat class directly in command line
 import sys
 sys.path.append(".")
 from infoclimat import infoclimat
@@ -157,7 +167,10 @@ class Handler(GenericDevice):
         if self.result is None:
             return None, None
 
-        if wv.path.split()[0] == "hourly":
+        if "text/html" in self.inst.headers['Content-type'] and "Wrong ip address" in self.result:
+            logger.info(f"Error returned by the infoclimat API ({self.result}). Check the {self._device} token.")
+            return None, None
+        elif wv.path.split()[0] == "hourly" and hasattr(self.result, "get"):
             values = []
             read_times = []
             tmp = self.result
