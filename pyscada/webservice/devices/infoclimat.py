@@ -70,6 +70,7 @@ class infoclimat(object):
         self.proxy_dict = proxy_dict
         self.timeout = timeout
         self.params = {}
+        self.stop_read_all = False
 
     def set_url(self, url=None):
         if url is None:
@@ -153,13 +154,15 @@ class Handler(GenericDevice):
                     f"{wd} from {t_from.isoformat()} to {t_to.isoformat()} iteration {i}"
                 )
                 out = super().read_data_all(hourly_variables)
-                if len(out):
+                if len(out) and not self.stop_read_all:
                     for var in out:
                         if var not in output:
                             logger.info(f"adding {var} to output")
                             output.append(var)
                     break
             t_from = t_to
+
+        self.stop_read_all = False
         return output
 
     def read_data_and_time(self, variable_instance):
@@ -169,6 +172,11 @@ class Handler(GenericDevice):
 
         if "text/html" in self.inst.headers['Content-type'] and "Wrong ip address" in self.result:
             logger.info(f"Error returned by the infoclimat API ({self.result}). Check the {self._device} token.")
+            self.stop_read_all = True
+            return None, None
+        elif "text/html" in self.inst.headers['Content-type'] and "You've been temporarily restricted to prevent the site from collapsing." in self.result:
+            logger.info(f"Error returned by the infoclimat API ({self.result}). Check you infoclimat account.")
+            self.stop_read_all = True
             return None, None
         elif wv.path.split()[0] == "hourly" and hasattr(self.result, "get"):
             values = []
