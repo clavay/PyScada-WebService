@@ -70,6 +70,7 @@ class GenericDevice(GenericHandlerDevice):
             elif (
                 wd.webservice_content_type == 2
                 or "application/json" in self.inst.headers["Content-type"]
+                or "text/plain" in self.inst.headers["Content-type"]
             ):
                 tmp = self.result
                 for key in wv.path.split():
@@ -170,6 +171,7 @@ class GenericDevice(GenericHandlerDevice):
                 return True
             elif (
                 "application/json" in self.inst.headers["Content-type"]
+                or "text/plain" in self.inst.headers["Content-type"]
                 or wd.webservice_content_type == 2
             ):
                 try:
@@ -181,7 +183,7 @@ class GenericDevice(GenericHandlerDevice):
                         logger.info(f"{wd.url} - JSONDecodeError : {self.inst.text}")
                     self.log_error_2_count += 1
             else:
-                logger.info(f"Unknown Content-type for {self._device}. It is {self.inst.headers['Content-type']}. Read result as text : {self.inst.text}")
+                logger.info(f"Unknown Content-type for {self._device}. It is {self.inst.headers['Content-type']}. Read result as text : {self.inst.text[:200]}")
                 self.result = self.inst.text
                 return True
         elif self.inst is not None:
@@ -204,7 +206,6 @@ class GenericDevice(GenericHandlerDevice):
     def write_data(self, variable_id, value, task):
         if task.variable is None:
             return None
-        wv = task.variable.webservicevariable
         wd = task.variable.device.webservicedevice
         path = wd.url
         for var in self._variables.values():
